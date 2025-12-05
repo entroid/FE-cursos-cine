@@ -43,6 +43,9 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        main: {
+          DEFAULT: "hsl(var(--main))",
+        },
       },
     },
   },

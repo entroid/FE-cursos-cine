@@ -1,10 +1,15 @@
-import { redirect } from "next/navigation";
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { authOptions } from "./api/auth/[...nextauth]/route"
 
-export default function Home() {
-  // In a real app, check session here.
-  // If session, redirect to /dashboard
-  // If no session, redirect to /login or landing page
+export default async function Home() {
+  const session = await getServerSession(authOptions)
 
-  // For now, redirect to login as default entry
-  redirect("/login");
+  if (session) {
+    // User is authenticated, redirect to dashboard
+    redirect("/dashboard")
+  } else {
+    // User is not authenticated, redirect to login
+    redirect("/login")
+  }
 }

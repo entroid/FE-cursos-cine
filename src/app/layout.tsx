@@ -26,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={cn(
           "min-h-screen bg-background font-sans antialiased flex flex-col",
           poppins.variable
@@ -33,7 +34,7 @@ export default function RootLayout({
       >
         <Providers>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 bg-main">{children}</main>
           <Footer />
         </Providers>
       </body>

@@ -1,48 +1,239 @@
-import { Search } from "lucide-react"
+import { Suspense } from "react";
+import { Search, Filter } from "lucide-react";
+import { getPublishedCourses, getTags } from "@/lib/strapi";
+import { CourseCard, CourseCardSkeleton } from "@/components/catalog/course-card";
+import { SearchBar } from "@/components/catalog/search-bar";
+import type { CatalogCourse } from "@/types/course";
 
-export default function CatalogPage() {
+interface CatalogPageProps {
+    searchParams: Promise<{
+        tag?: string;
+        level?: string;
+        q?: string;
+    }>;
+}
+
+/**
+ * Catalog page - displays all published courses
+ * Server Component with data fetching
+ */
+export default async function CatalogPage({ searchParams }: CatalogPageProps) {
+    const params = await searchParams;
+
     return (
         <div className="container mx-auto py-8 px-4">
+            {/* Header */}
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <h1 className="text-3xl font-bold text-foreground">Catálogo</h1>
-                <div className="relative w-full md:w-72">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <Search className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <input
-                        type="text"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Buscar cursos..."
-                    />
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground">Catálogo</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Explora nuestros cursos de cine y producción audiovisual
+                    </p>
                 </div>
+
+                {/* Search Bar */}
+                <SearchBar defaultValue={params.q} />
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="flex flex-col bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-                        <div className="aspect-video w-full bg-muted" />
-                        <div className="p-6 flex-1 flex flex-col">
-                            <div className="mb-2 flex items-center justify-between">
-                                <span className="inline-flex items-center rounded-full border border-transparent bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                                    Cine Experimental
-                                </span>
-                                <span className="text-sm font-bold text-foreground">$49.99</span>
-                            </div>
-                            <h3 className="text-lg font-semibold leading-none tracking-tight text-foreground mb-2">
-                                Curso de Ejemplo {i}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Una breve descripción del curso y sus objetivos principales.
-                            </p>
-                            <div className="mt-auto">
-                                <button className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                                    Ver Detalles
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {/* Filters */}
+            <Suspense fallback={<FiltersSkeleton />}>
+                <FiltersSection currentTag={params.tag} currentLevel={params.level} />
+            </Suspense>
+
+            {/* Course Grid */}
+            <Suspense fallback={<CourseGridSkeleton />}>
+                <CourseGrid tag={params.tag} level={params.level} query={params.q} />
+            </Suspense>
         </div>
-    )
+    );
+}
+
+/**
+ * Filters section component
+ */
+async function FiltersSection({
+    currentTag,
+    currentLevel,
+}: {
+    currentTag?: string;
+    currentLevel?: string;
+}) {
+    let tags: Array<{ id: number; name: string; slug: string; color?: string }> = [];
+
+    try {
+        tags = await getTags();
+    } catch (error) {
+        console.error("Failed to fetch tags:", error);
+    }
+
+    const levels = [
+        { value: "beginner", label: "Principiante" },
+        { value: "intermediate", label: "Intermedio" },
+        { value: "advanced", label: "Avanzado" },
+    ];
+
+    return (
+        <div className="mb-6 flex flex-wrap gap-2">
+            {/* All Courses */}
+            <a
+                href="/catalog"
+                className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${!currentTag && !currentLevel
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+            >
+                Todos
+            </a>
+
+            {/* Tag Filters */}
+            {tags.map((tag) => (
+                <a
+                    key={tag.id}
+                    href={`/catalog?tag=${tag.slug}`}
+                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${currentTag === tag.slug
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }`}
+                    style={
+                        currentTag === tag.slug && tag.color
+                            ? { backgroundColor: tag.color }
+                            : undefined
+                    }
+                >
+                    {tag.name}
+                </a>
+            ))}
+
+            {/* Separator */}
+            {tags.length > 0 && (
+                <div className="mx-2 h-8 w-px bg-border self-center" />
+            )}
+
+            {/* Level Filters */}
+            {levels.map((level) => (
+                <a
+                    key={level.value}
+                    href={`/catalog?level=${level.value}`}
+                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${currentLevel === level.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                >
+                    {level.label}
+                </a>
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Course grid with data fetching
+ */
+async function CourseGrid({
+    tag,
+    level,
+    query,
+}: {
+    tag?: string;
+    level?: string;
+    query?: string;
+}) {
+    let courses: CatalogCourse[] = [];
+    let error: string | null = null;
+
+    try {
+        courses = await getPublishedCourses({ tag, level });
+
+        // Filter by search query (client-side)
+        if (query) {
+            const normalizedQuery = query.toLowerCase().trim();
+            courses = courses.filter(
+                (course) =>
+                    course.title.toLowerCase().includes(normalizedQuery) ||
+                    course.shortDescription.toLowerCase().includes(normalizedQuery)
+            );
+        }
+    } catch (e) {
+        error = e instanceof Error ? e.message : "Error al cargar cursos";
+        console.error("Failed to fetch courses:", e);
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="rounded-full bg-destructive/10 p-4 mb-4">
+                    <Filter className="h-8 w-8 text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                    Error al cargar cursos
+                </h3>
+                <p className="text-muted-foreground max-w-md">
+                    No pudimos cargar el catálogo. Por favor, intenta de nuevo más tarde.
+                </p>
+            </div>
+        );
+    }
+
+    if (courses.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                    No hay cursos disponibles
+                </h3>
+                <p className="text-muted-foreground max-w-md">
+                    {tag || level
+                        ? "No encontramos cursos con los filtros seleccionados. Prueba con otros filtros."
+                        : "Pronto agregaremos nuevos cursos al catálogo. ¡Vuelve pronto!"}
+                </p>
+                {(tag || level) && (
+                    <a
+                        href="/catalog"
+                        className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                        Ver todos los cursos
+                    </a>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Skeleton for filters
+ */
+function FiltersSkeleton() {
+    return (
+        <div className="mb-6 flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                    key={i}
+                    className="h-8 w-20 rounded-full bg-muted animate-pulse"
+                />
+            ))}
+        </div>
+    );
+}
+
+/**
+ * Skeleton for course grid
+ */
+function CourseGridSkeleton() {
+    return (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+                <CourseCardSkeleton key={i} />
+            ))}
+        </div>
+    );
 }

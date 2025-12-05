@@ -5,24 +5,39 @@ declare module "next-auth" {
     interface User {
         id: string
         strapiToken?: string
-        role?: string
     }
 
     interface Session {
-        strapiToken?: string
-        strapiUser?: any
         user: {
             id: string
-            role?: string
+            email: string
+            name: string
         } & DefaultSession["user"]
+        strapiToken?: string
+        strapiUser?: {
+            id: number
+            username: string
+            email: string
+            displayName: string
+            avatar?: {
+                url: string
+            } | null
+            courses: Array<{
+                id: number
+                title: string
+                slug: string
+                coverImage?: {
+                    url: string
+                }
+            }>
+        }
     }
 }
 
 declare module "next-auth/jwt" {
     interface JWT {
-        userId?: string
         strapiToken?: string
+        userId?: string
         strapiUser?: any
-        role?: string
     }
 }

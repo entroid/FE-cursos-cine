@@ -44,27 +44,28 @@ export function Navbar() {
                     <Link href="/" className="flex items-center space-x-2">
                         <span className="text-xl font-bold tracking-tight">ESCUELA DE CINE</span>
                     </Link>
-                    <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-                        {filteredRoutes.map((route) => (
-                            <Link
-                                key={route.href}
-                                href={route.href}
-                                className={cn(
-                                    "transition-colors hover:text-foreground/80",
-                                    route.active ? "text-foreground" : "text-foreground/60"
-                                )}
-                            >
-                                {route.label}
-                            </Link>
-                        ))}
-                    </nav>
                 </div>
+
+                <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+                    {filteredRoutes.map((route) => (
+                        <Link
+                            key={route.href}
+                            href={route.href}
+                            className={cn(
+                                "transition-colors hover:text-foreground/80",
+                                route.active ? "text-foreground" : "text-foreground/60"
+                            )}
+                        >
+                            {route.label}
+                        </Link>
+                    ))}
+                </nav>
 
                 <div className="flex items-center gap-4">
                     {isAuthenticated ? (
                         <Menu as="div" className="relative ml-3">
                             <div>
-                                <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                                <MenuButton className="relative flex rounded-full bg-main text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                                     <span className="absolute -inset-1.5" />
                                     <span className="sr-only">Open user menu</span>
                                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">

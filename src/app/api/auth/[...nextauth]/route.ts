@@ -1,16 +1,24 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
+import {
+    loginUser,
+    getStrapiUser,
+    findUserByEmail,
+    createStrapiUser,
+} from "@/lib/strapi";
 
 export const authOptions: NextAuthOptions = {
     providers: [
-        // Google OAuth Provider
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        }),
+        // Google OAuth Provider (conditional - only if credentials are configured)
+        ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+            ? [
+                GoogleProvider({
+                    clientId: process.env.GOOGLE_CLIENT_ID,
+                    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                }),
+            ]
+            : []),
 
         // Credentials Provider (Email/Password)
         CredentialsProvider({
@@ -24,21 +32,11 @@ export const authOptions: NextAuthOptions = {
                     return null;
                 }
                 try {
-                    // Login to Strapi
-                    const response = await fetch(`${STRAPI_URL}/api/auth/local`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            identifier: credentials.email,
-                            password: credentials.password,
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        return null;
-                    }
-
-                    const data = await response.json();
+                    // Login to Strapi using utility function
+                    const data = await loginUser(
+                        credentials.email,
+                        credentials.password
+                    );
 
                     return {
                         id: data.user.id.toString(),
@@ -59,32 +57,17 @@ export const authOptions: NextAuthOptions = {
             if (account?.provider === "google") {
                 try {
                     // Check if user exists in Strapi
-                    const checkResponse = await fetch(
-                        `${STRAPI_URL}/api/users?filters[email][$eq]=${user.email}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
-                            },
-                        }
-                    );
-                    const existingUsers = await checkResponse.json();
+                    const existingUsers = await findUserByEmail(user.email!);
 
                     // If user doesn't exist, create them
                     if (existingUsers.length === 0) {
-                        await fetch(`${STRAPI_URL}/api/users`, {
-                            method: "POST",
-                            headers: {
-                                Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                username: user.email?.split("@")[0],
-                                email: user.email,
-                                displayName: user.name || "Alumno",
-                                password: crypto.randomUUID(), // Random password (not used)
-                                confirmed: true,
-                                blocked: false,
-                            }),
+                        await createStrapiUser({
+                            username: user.email?.split("@")[0]!,
+                            email: user.email!,
+                            displayName: user.name || "Alumno",
+                            password: crypto.randomUUID(), // Random password (not used)
+                            confirmed: true,
+                            blocked: false,
                         });
                     }
                     return true;
@@ -105,19 +88,8 @@ export const authOptions: NextAuthOptions = {
             // Refresh Strapi user data using API Token (server-side)
             if (token.email) {
                 try {
-                    const response = await fetch(`${STRAPI_URL}/api/users/me`, {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email: token.email }),
-                    });
-
-                    if (response.ok) {
-                        const strapiUser = await response.json();
-                        token.strapiUser = strapiUser;
-                    }
+                    const strapiUser = await getStrapiUser(token.email);
+                    token.strapiUser = strapiUser;
                 } catch (error) {
                     console.error("Error fetching Strapi user:", error);
                 }
