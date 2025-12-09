@@ -112,6 +112,7 @@ export interface Course {
     title: string;
     slug: string;
     coverImage?: StrapiMedia | null;
+    urlPresentacion?: string;
     shortDescription?: string;
     fullDescription?: string;
     instructor?: Instructor | null;

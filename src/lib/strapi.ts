@@ -512,19 +512,40 @@ export async function getPublishedCourses(options?: {
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
     const params = new URLSearchParams();
     params.append("filters[slug][$eq]", slug);
-    params.append("populate", "deep");
+    params.append("populate[modules][populate]", "lessons");
+    params.append("populate[instructor]", "populate");
+    params.append("populate[tags]", "populate");
+    params.append("populate[coverImage]", "populate");
+    params.append("populate[settings]", "populate");
 
-    const response = await fetch(
-        `${STRAPI_URL}/api/courses?${params.toString()}`,
-        { next: { revalidate: 60 } }
-    );
+    const url = `${STRAPI_URL}/api/courses?${params.toString()}`;
 
-    if (!response.ok) {
-        throw new Error("Failed to fetch course");
+    try {
+        const response = await fetch(url, { next: { revalidate: 60 } });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(
+                `Strapi error (${response.status}) fetching course "${slug}":`,
+                errorText
+            );
+            throw new Error(
+                `Failed to fetch course: ${response.status} ${response.statusText}`
+            );
+        }
+
+        const data: CoursesResponse = await response.json();
+        
+        if (!data.data || data.data.length === 0) {
+            console.warn(`Course with slug "${slug}" not found in Strapi`);
+            return null;
+        }
+
+        return data.data[0];
+    } catch (error) {
+        console.error(`Error fetching course by slug "${slug}":`, error);
+        throw error;
     }
-
-    const data: CoursesResponse = await response.json();
-    return data.data.length > 0 ? data.data[0] : null;
 }
 
 /**

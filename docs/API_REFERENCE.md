@@ -80,6 +80,7 @@ GET /api/courses/{id}?populate=deep
 | `title` | String | Course title (required) |
 | `slug` | UID | URL-friendly identifier |
 | `coverImage` | Media | Course thumbnail |
+| `urlPresentacion` | String | Course presentation video URL (YouTube, Vimeo, etc.) |
 | `shortDescription` | Text | Max 200 chars |
 | `fullDescription` | Richtext | Full HTML description |
 | `instructor` | Relation | Instructor reference |

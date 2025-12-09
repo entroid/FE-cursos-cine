@@ -52,8 +52,10 @@ export function Navbar() {
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "transition-colors hover:text-foreground/80",
-                                route.active ? "text-foreground" : "text-foreground/60"
+                                "transition-colors hover:text-foreground/80 border-b-[3px] p-1",
+                                route.active
+                                    ? "text-foreground font-semibold border-primary"
+                                    : "text-foreground/60 border-transparent"
                             )}
                         >
                             {route.label}
@@ -141,7 +143,7 @@ export function Navbar() {
                             </Link>
                             <Link
                                 href="/register"
-                                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                                className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                             >
                                 Registrarse
                             </Link>
