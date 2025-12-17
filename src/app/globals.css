@@ -5,17 +5,19 @@
 @layer base {
     :root {
         --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --card: 0 0% 100%;
+        --background2: 0 50% 96%;
+        --background3: 145 50% 94%;
+        --foreground: 0 0% 20%; /* #333333 */
+        --card: 40 50% 98%;
         --card-foreground: 240 10% 3.9%;
-        --primary: 240 5.9% 10%;
-        --primary-foreground: 0 0% 98%;
+        --primary: 0 0% 20%; 
+        --primary-foreground: 0 0% 96%;
         --secondary: 240 4.8% 95.9%;
         --secondary-foreground: 240 5.9% 10%;
         --muted: 60 13.8% 87.3%;
         --muted-foreground: 240 3.8% 46.1%;
-        --accent: 240 4.8% 95.9%;
-        --accent-foreground: 240 5.9% 10%;
+        --accent: 257 97% 64%; /* purple */
+        --accent-foreground: 0 0% 96%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
         --border: 240 5.9% 90%;
@@ -26,6 +28,8 @@
 
     .dark {
         --background: 240 10% 3.9%;
+        --background2: 240 10% 8%;
+        --background3: 240 10% 12%;
         --foreground: 0 0% 98%;
         --card: 240 10% 3.9%;
         --card-foreground: 0 0% 98%;
@@ -53,6 +57,10 @@
 
     body {
         @apply bg-background text-foreground;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "kern" 1, "liga" 1;
     }
 }
 

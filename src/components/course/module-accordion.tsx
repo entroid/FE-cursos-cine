@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Play, Lock } from "lucide-react";
 import type { Module, Lesson } from "@/types/course";
 import { formatDuration } from "@/types/course";
 
@@ -16,10 +16,10 @@ export function ModuleAccordion({ module, courseSlug }: ModuleAccordionProps) {
     const toggle = () => setIsOpen(!isOpen);
 
     return (
-        <div className="border border-border rounded-xl overflow-hidden bg-card">
+        <div className="border border-border overflow-hidden bg-card">
             <button
                 onClick={toggle}
-                className="w-full bg-muted/30 p-4 font-semibold text-foreground flex items-center justify-between hover:bg-muted/50 transition-colors"
+                className="w-full bg-background p-4 font-semibold text-foreground flex items-center justify-between hover:bg-muted/50 transition-colors"
             >
                 <span>{module.title}</span>
                 <ChevronDown
@@ -28,7 +28,7 @@ export function ModuleAccordion({ module, courseSlug }: ModuleAccordionProps) {
             </button>
 
             {isOpen && module.description ? (
-                <div className="px-4 pb-2 bg-muted/30 text-xs font-normal text-muted-foreground">
+                <div className="px-4 pt-2 pb-2 bg-background text-xs font-normal text-muted-foreground">
                     {module.description.length > 200
                         ? module.description.slice(0, 200).trim() + "..."
                         : module.description}
@@ -36,7 +36,7 @@ export function ModuleAccordion({ module, courseSlug }: ModuleAccordionProps) {
             ) : null}
 
             {isOpen && (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border border-t">
                     {module.lessons?.length ? (
                         module.lessons
                             .sort((a, b) => a.order - b.order)
@@ -44,7 +44,12 @@ export function ModuleAccordion({ module, courseSlug }: ModuleAccordionProps) {
                                 const content = (
                                     <div className="flex items-center justify-between p-4">
                                         <div className="flex items-center gap-3 text-foreground">
-                                            <span className="text-sm font-medium">
+                                            {lesson.freePreview ? (
+                                                <Play className="h-4 w-4 text-primary" />
+                                            ) : (
+                                                <Lock className="h-4 w-4 text-muted-foreground" />
+                                            )}
+                                            <span className={`text-sm font-medium ${lesson.freePreview ? "" : "text-muted-foreground"}`}>
                                                 {lesson.title}
                                             </span>
                                             {lesson.duration ? (
@@ -67,14 +72,14 @@ export function ModuleAccordion({ module, courseSlug }: ModuleAccordionProps) {
                                         href={`/course/${courseSlug}/learn?lesson=${encodeURIComponent(
                                             lesson.lessonId,
                                         )}`}
-                                        className="block hover:bg-muted/50 transition-colors"
+                                        className="block  hover:bg-background3 transition-colors"
                                     >
                                         {content}
                                     </a>
                                 ) : (
                                     <div
                                         key={lesson.id}
-                                        className="hover:bg-muted/30 transition-colors"
+                                        className="bg-main transition-colors"
                                     >
                                         {content}
                                     </div>

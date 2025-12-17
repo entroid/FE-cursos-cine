@@ -7,12 +7,15 @@ import { updateProgress } from "@/lib/strapi";
  */
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const enrollmentId = parseInt(params.id);
+        const { id } = await params;
+        const enrollmentId = parseInt(id);
+        console.log("PUT /api/enrollments/[id] - Updating enrollment:", { enrollmentId, paramId: id });
 
         if (isNaN(enrollmentId)) {
+            console.log("PUT /api/enrollments/[id] - Invalid enrollment ID:", id);
             return NextResponse.json(
                 { error: "Invalid enrollment ID" },
                 { status: 400 }
@@ -31,7 +34,13 @@ export async function PUT(
         const jwtToken = authHeader.substring(7);
 
         // Parse request body
-        const data = await request.json();
+        const body = await request.json();
+
+        // Ensure Strapi v5-compatible payload: wrap in `data` and include `id`
+        const data = {
+            id: enrollmentId,
+            ...(body?.data ?? body ?? {}),
+        };
 
         // Update progress in Strapi
         const result = await updateProgress(enrollmentId, jwtToken, data);
@@ -45,3 +54,4 @@ export async function PUT(
         );
     }
 }
+

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Radio_Canada } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const poppins = Poppins({
+const radioCanada = Radio_Canada({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
+  variable: "--font-radio-canada",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -29,12 +30,12 @@ export default function RootLayout({
         suppressHydrationWarning
         className={cn(
           "min-h-screen bg-background font-sans antialiased flex flex-col",
-          poppins.variable
+          radioCanada.variable
         )}
       >
         <Providers>
           <Navbar />
-          <main className="flex-1 bg-main">{children}</main>
+          <main className="flex-1 bg-main px-8">{children}</main>
           <Footer />
         </Providers>
       </body>

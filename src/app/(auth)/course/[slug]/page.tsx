@@ -8,6 +8,7 @@ import type { Course, Module, Lesson } from "@/types/course";
 import { getStrapiMediaUrl, formatDuration, getLevelLabel } from "@/types/course";
 import { CourseSidebar } from "@/components/course/course-sidebar";
 import { ModuleAccordion } from "@/components/course/module-accordion";
+import { Card } from "@/components/ui/card";
 
 function getYouTubeEmbedUrl(url: string): string | null {
     try {
@@ -59,26 +60,11 @@ export default async function CourseDetailPage({
     const youTubeEmbedUrl = presentationUrl ? getYouTubeEmbedUrl(presentationUrl) : null;
 
     return (
-        <div className="container mx-auto py-8 px-4">
+        <div className="w-full py-8 px-4 md:px-8">
             <div className="grid gap-8 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-8">
-                    <div>
-                        {course.tags && course.tags.length > 0 ? (
-                            <span className="inline-flex items-center rounded-full border border-transparent bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground transition-colors mb-4">
-                                {course.tags[0].name}
-                            </span>
-                        ) : null}
-                        <h1 className="mb-4 text-4xl font-bold text-foreground">
-                            {course.title}
-                        </h1>
-                        {course.shortDescription ? (
-                            <p className="text-lg text-muted-foreground">
-                                {course.shortDescription}
-                            </p>
-                        ) : null}
-                    </div>
 
-                    <div className="aspect-video w-full rounded-lg bg-muted overflow-hidden flex items-center justify-center relative">
+                    <div className="aspect-video w-full  bg-muted overflow-hidden flex items-center justify-center relative">
                         {youTubeEmbedUrl ? (
                             <iframe
                                 src={youTubeEmbedUrl}
@@ -104,8 +90,19 @@ export default async function CourseDetailPage({
                         )}
                     </div>
 
+                    <div>
+                        {course.tags && course.tags.length > 0 ? (
+                            <span className="text-xs rounded-full bg-muted text-foreground font-light inline-flex px-2.5 py-0.5 mb-4">
+                                {course.tags[0].name}
+                            </span>
+                        ) : null}
+                        <h1 className="mb-4 text-5xl font-light text-foreground">
+                            {course.title}
+                        </h1>
+                    </div>
+
                     {course.fullDescription ? (
-                        <section className="prose max-w-none dark:prose-invert text-foreground">
+                        <section className="prose max-w-none dark:prose-invert text-foreground pb-4">
                             <h2>Descripción del curso</h2>
                             <div
                                 dangerouslySetInnerHTML={{
@@ -115,13 +112,13 @@ export default async function CourseDetailPage({
                         </section>
                     ) : null}
 
-                    <section>
-                        <h2 className="mb-4 text-2xl font-bold text-foreground">Contenido del Curso</h2>
+                    <section className="border-t pt-8 mt-8">
+                        <h2 className="mb-4 text-2xl font-light text-foreground">Contenido del Curso</h2>
                         <div className="space-y-4">
                             {sortModules(course.modules).length === 0 ? (
-                                <div className="bg-card rounded-xl border border-border p-4 text-sm text-muted-foreground">
+                                <Card padding="sm" className="text-sm text-muted-foreground">
                                     El contenido de este curso estará disponible próximamente.
-                                </div>
+                                </Card>
                             ) : (
                                 sortModules(course.modules).map((module) => (
                                     <ModuleAccordion

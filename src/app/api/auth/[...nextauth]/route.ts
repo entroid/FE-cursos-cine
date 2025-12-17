@@ -57,13 +57,18 @@ export const authOptions: NextAuthOptions = {
             if (account?.provider === "google") {
                 try {
                     // Check if user exists in Strapi
-                    const existingUsers = await findUserByEmail(user.email!);
+                    const userEmail = user.email ?? null;
+                    if (!userEmail) {
+                        return false;
+                    }
+                    const existingUsers = await findUserByEmail(userEmail);
 
                     // If user doesn't exist, create them
                     if (existingUsers.length === 0) {
+                        const username = userEmail.split("@")[0];
                         await createStrapiUser({
-                            username: user.email?.split("@")[0]!,
-                            email: user.email!,
+                            username,
+                            email: userEmail,
                             displayName: user.name || "Alumno",
                             password: crypto.randomUUID(), // Random password (not used)
                             confirmed: true,
@@ -86,7 +91,7 @@ export const authOptions: NextAuthOptions = {
             }
 
             // Refresh Strapi user data using API Token (server-side)
-            if (token.email) {
+            if (token.email && process.env.STRAPI_API_TOKEN) {
                 try {
                     const strapiUser = await getStrapiUser(token.email);
                     token.strapiUser = strapiUser;
@@ -99,7 +104,19 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             session.user.id = token.userId as string;
             session.strapiToken = token.strapiToken as string;
-            session.strapiUser = token.strapiUser as any;
+            session.strapiUser = token.strapiUser as {
+                id: number;
+                username: string;
+                email: string;
+                displayName: string;
+                avatar?: { url: string } | null;
+                courses: Array<{
+                    id: number;
+                    title: string;
+                    slug: string;
+                    coverImage?: { url: string };
+                }>;
+            } | undefined;
 
             return session;
         },

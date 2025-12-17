@@ -38,6 +38,22 @@ declare module "next-auth/jwt" {
     interface JWT {
         strapiToken?: string
         userId?: string
-        strapiUser?: any
+        strapiUser?: {
+            id: number
+            username: string
+            email: string
+            displayName: string
+            avatar?: {
+                url: string
+            } | null
+            courses: Array<{
+                id: number
+                title: string
+                slug: string
+                coverImage?: {
+                    url: string
+                }
+            }>
+        }
     }
 }

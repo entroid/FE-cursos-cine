@@ -14,6 +14,8 @@ import type {
     UpdateProgressData,
     FlattenedEnrollment,
     Enrollment,
+    EnrollmentCourse,
+    EnrollmentAttributes,
 } from "@/types/enrollment";
 
 import type {
@@ -83,22 +85,40 @@ export interface StrapiUser {
  * ```
  */
 export async function getStrapiUser(email: string): Promise<StrapiUser> {
-    const response = await fetch(`${STRAPI_URL}/api/users/me`, {
-        method: "POST",
+    // Use the users endpoint with email filter instead of /api/users/me
+    const url = `${STRAPI_URL}/api/users?filters[email][$eq]=${encodeURIComponent(email)}`
+    const token = process.env.STRAPI_API_TOKEN
+    if (!token) {
+        throw new Error("Missing STRAPI_API_TOKEN environment variable. Please configure it in your .env.local file.")
+    }
+    const response = await fetch(url, {
+        method: "GET",
         headers: {
-            Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ email }),
         cache: "no-store",
-    });
+    })
 
     if (!response.ok) {
-        throw new Error("Failed to fetch user data");
+        const text = await response.text()
+        throw new Error(`Failed to fetch user data: ${response.status} ${text}`)
     }
 
-    return response.json();
+    const data = await response.json()
+    
+    // In Strapi v5, the response structure is different - it returns an array directly
+    // not wrapped in a `data` property like in Strapi v4
+    const users = Array.isArray(data) ? data : (data.data || [])
+    
+    // Check if user was found and return the first result
+    if (!users || users.length === 0) {
+        throw new Error(`User with email ${email} not found`)
+    }
+    
+    return users[0]
 }
+
+// NOTE: User profile should be fetched server-side using API Token per docs
 
 /**
  * Validate user access to a course
@@ -118,21 +138,35 @@ export async function getStrapiUser(email: string): Promise<StrapiUser> {
  */
 export async function validateCourseAccess(
     courseId: number,
-    userId: number
+    userId: number,
+    userJwt?: string
 ): Promise<boolean> {
+    // Prefer user JWT token over API token for enrollment access
+    const token = userJwt || process.env.STRAPI_API_TOKEN
+    if (!token) {
+        throw new Error("Missing authentication token for access validation")
+    }
+    
+    // Check if user has an enrollment for this course (any status except not-started)
     const response = await fetch(
-        `${STRAPI_URL}/api/enrollment/validate-access?courseId=${courseId}&userId=${userId}`,
+        `${STRAPI_URL}/api/enrollments?filters[course][id][$eq]=${courseId}&filters[user][id][$eq]=${userId}`,
         {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
             cache: "no-store",
         }
     );
 
     if (!response.ok) {
-        throw new Error("Failed to validate access");
+        const text = await response.text()
+        throw new Error(`Failed to validate access: ${response.status} ${text}`)
     }
 
     const data = await response.json();
-    return data.hasAccess;
+    // User has access if they have at least one enrollment for this course
+    return data.data && data.data.length > 0;
 }
 
 /**
@@ -222,7 +256,7 @@ export async function loginUser(
  * const userExists = users.length > 0;
  * ```
  */
-export async function findUserByEmail(email: string): Promise<any[]> {
+export async function findUserByEmail(email: string): Promise<StrapiUser[]> {
     const response = await fetch(
         `${STRAPI_URL}/api/users?filters[email][$eq]=${email}`,
         {
@@ -236,7 +270,8 @@ export async function findUserByEmail(email: string): Promise<any[]> {
         throw new Error("Failed to search for user");
     }
 
-    return response.json();
+    const data = await response.json();
+    return data as StrapiUser[];
 }
 
 /**
@@ -266,7 +301,7 @@ export async function createStrapiUser(userData: {
     password: string;
     confirmed: boolean;
     blocked: boolean;
-}): Promise<any> {
+}): Promise<StrapiUser> {
     const response = await fetch(`${STRAPI_URL}/api/users`, {
         method: "POST",
         headers: {
@@ -280,7 +315,8 @@ export async function createStrapiUser(userData: {
         throw new Error("Failed to create user");
     }
 
-    return response.json();
+    const data = await response.json();
+    return data as StrapiUser;
 }
 
 // ============================================================================
@@ -402,30 +438,66 @@ export async function getContinueWatching(
  * @param enrollment - Raw enrollment from Strapi
  * @returns Flattened enrollment object
  */
-export function flattenEnrollment(enrollment: Enrollment | any): FlattenedEnrollment {
-    // Support both Strapi v4 (with attributes) and v5 (flat structure)
-    const attrs = enrollment.attributes || enrollment;
-    const courseData = attrs.course?.data || attrs.course;
-    const courseAttrs = courseData?.attributes || courseData;
+type EnrollmentFlat = {
+    id: number;
+    enrollmentStatus: EnrollmentAttributes["enrollmentStatus"];
+    progressPercentage?: number;
+    currentLesson: EnrollmentAttributes["currentLesson"];
+    completedLessons?: EnrollmentAttributes["completedLessons"];
+    lastAccessedAt: string;
+    enrolledAt?: string;
+    completedAt?: string | null;
+    course: {
+        id: number;
+        title: string;
+        slug: string;
+        coverImage?: string | { url: string } | null;
+        totalLessons?: number;
+    };
+};
+
+function hasAttributes(e: unknown): e is Enrollment {
+    return typeof e === "object" && e !== null && "attributes" in (e as Record<string, unknown>);
+}
+
+function hasCourseData(c: unknown): c is { data: { id: number; attributes: EnrollmentFlat["course"] } } {
+    return typeof c === "object" && c !== null && "data" in (c as Record<string, unknown>);
+}
+
+export function flattenEnrollment(enrollment: Enrollment | EnrollmentFlat): FlattenedEnrollment {
+    const attrs = hasAttributes(enrollment) ? enrollment.attributes : enrollment;
+    const courseField = (attrs as { course?: unknown }).course;
+    let courseId = 0;
+    let courseAttrs: { title?: string; slug?: string; coverImage?: string | { url: string } | null; totalLessons?: number } = {};
+
+    if (hasCourseData(courseField)) {
+        courseId = courseField.data.id;
+        courseAttrs = courseField.data.attributes as EnrollmentCourse;
+    } else if (typeof courseField === "object" && courseField && "id" in courseField) {
+        const cf = courseField as EnrollmentFlat["course"];
+        courseId = cf.id;
+        courseAttrs = cf;
+    }
 
     return {
-        id: enrollment.id,
+        id: hasAttributes(enrollment) ? enrollment.id : (enrollment as EnrollmentFlat).id,
         enrollmentStatus: attrs.enrollmentStatus,
         progressPercentage: attrs.progressPercentage || 0,
         currentLesson: attrs.currentLesson,
         completedLessons: attrs.completedLessons || [],
         lastAccessedAt: new Date(attrs.lastAccessedAt),
-        enrolledAt: attrs.enrolledAt
-            ? new Date(attrs.enrolledAt)
-            : undefined,
-        completedAt: attrs.completedAt
-            ? new Date(attrs.completedAt)
-            : null,
+        enrolledAt: attrs.enrolledAt ? new Date(attrs.enrolledAt) : undefined,
+        completedAt: attrs.completedAt ? new Date(attrs.completedAt) : null,
         course: {
-            id: courseData?.id || 0,
+            id: courseId,
             title: courseAttrs?.title || "",
             slug: courseAttrs?.slug || "",
-            coverImage: getStrapiMediaUrl(courseAttrs?.coverImage),
+            coverImage: (() => {
+                const cover = courseAttrs?.coverImage;
+                if (!cover) return null;
+                if (typeof cover === "string") return getStrapiMedia(cover);
+                return getStrapiMedia(cover.url);
+            })(),
             totalLessons: courseAttrs?.totalLessons,
         },
     };

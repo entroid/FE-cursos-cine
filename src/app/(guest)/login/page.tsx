@@ -2,9 +2,11 @@
 
 import Link from "next/link"
 import { signIn } from "next-auth/react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { X, Eye, EyeOff } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 export default function LoginPage() {
     const router = useRouter()
@@ -53,18 +55,7 @@ export default function LoginPage() {
         return ""
     }
 
-    // Real-time validation
-    useEffect(() => {
-        if (email) {
-            setEmailError(validateEmail(email))
-        }
-    }, [email])
-
-    useEffect(() => {
-        if (password) {
-            setPasswordError(validatePassword(password))
-        }
-    }, [password])
+    // Validación en submit y eventos, sin efectos
 
     // Check if form is valid
     const isFormValid = () => {
@@ -118,7 +109,7 @@ export default function LoginPage() {
             {/* Server Error Popup */}
             {serverError && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-6 relative">
+                    <Card padding="md" className="max-w-md w-full relative">
                         <button
                             onClick={() => setServerError(false)}
                             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
@@ -137,23 +128,24 @@ export default function LoginPage() {
                             <p className="text-sm text-muted-foreground mb-6">
                                 Intente nuevamente en unos minutos.
                             </p>
-                            <button
+                            <Button
+                                variant="primary"
                                 onClick={() => setServerError(false)}
-                                className="w-full rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                className="w-full"
                             >
                                 Entendido
-                            </button>
+                            </Button>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             )}
 
-            <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-xl border border-border shadow-sm">
+            <Card padding="lg" className="w-full max-w-md space-y-8">
                 <div className="text-center">
-                    <h2 className="mt-6 text-3xl font-bold tracking-tight text-foreground">
+                    <h2 className="mt-6 text-4xl tracking-tight text-foreground">
                         Iniciar Sesión
                     </h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-md text-muted-foreground">
                         Ingresa a tu cuenta para continuar aprendiendo
                     </p>
                 </div>
@@ -161,7 +153,7 @@ export default function LoginPage() {
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-4 rounded-md shadow-sm">
                         <div>
-                            <label htmlFor="email-address" className="block text-sm font-medium text-foreground mb-1">
+                            <label htmlFor="email-address" className="block text-md font-medium text-foreground mb-1">
                                 Email
                             </label>
                             <input
@@ -172,7 +164,7 @@ export default function LoginPage() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className={`relative block w-full rounded-md border ${emailError ? 'border-destructive' : 'border-input'
+                                className={`relative block w-full  border ${emailError ? 'border-destructive' : 'border-input'
                                     } bg-transparent px-3 py-2 text-foreground placeholder-muted-foreground focus:z-10 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm`}
                                 placeholder="tu@email.com"
                             />
@@ -184,7 +176,7 @@ export default function LoginPage() {
                         </div>
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                                <label htmlFor="password" className="block text-md font-medium text-foreground">
                                     Contraseña
                                 </label>
                                 <div className="text-sm">
@@ -205,7 +197,7 @@ export default function LoginPage() {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className={`relative block w-full rounded-md border ${passwordError ? 'border-destructive' : 'border-input'
+                                    className={`relative block w-full border ${passwordError ? 'border-destructive' : 'border-input'
                                         } bg-transparent px-3 py-2 pr-10 text-foreground placeholder-muted-foreground focus:z-10 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm`}
                                 />
                                 <button
@@ -229,13 +221,14 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <button
+                        <Button
                             type="submit"
+                            variant="primary"
                             disabled={loading || !isFormValid()}
-                            className="group relative flex w-full justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full"
                         >
                             {loading ? "Ingresando..." : "Ingresar"}
-                        </button>
+                        </Button>
                     </div>
                 </form>
 
@@ -245,7 +238,7 @@ export default function LoginPage() {
                         Regístrate
                     </Link>
                 </p>
-            </div>
+            </Card>
         </div>
     )
 }

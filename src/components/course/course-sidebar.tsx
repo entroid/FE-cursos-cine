@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { CourseLevel } from "@/types/course";
 import { formatDuration, formatPrice, getLevelLabel } from "@/types/course";
 import { useEnrollments } from "@/hooks/use-enrollments";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface CourseSidebarProps {
     courseId: number;
@@ -37,11 +39,11 @@ export function CourseSidebar({
     const primaryPrice = formatPrice(priceArg, "ARS");
 
     return (
-        <div className="bg-card rounded-xl border border-border shadow-sm">
+        <Card padding="none">
             <div className="p-6 border-b border-border space-y-2">
                 {enrollment ? (
                     <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs rounded-full bg-muted px-2.5 py-0.5 text-muted-foreground">
+                        <span className="text-xs font-light inline-flex rounded-full bg-muted text-foreground px-2.5 py-0.5">
                             {getLevelLabel(level)}
                         </span>
                         <span className="text-sm text-muted-foreground">
@@ -72,26 +74,21 @@ export function CourseSidebar({
 
             <div className="p-6 space-y-4">
                 {loading ? (
-                    <button
-                        className="inline-flex w-full items-center justify-center rounded-md bg-muted px-4 py-2 text-lg font-medium text-muted-foreground cursor-wait"
-                        disabled
-                    >
+                    <Button variant="primary" className="w-full" disabled>
                         Cargando...
-                    </button>
+                    </Button>
                 ) : enrollment ? (
-                    <Link
-                        href={`/course/${slug}/learn`}
-                        className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-lg font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    >
-                        Continuar
-                    </Link>
+                    <Button variant="accent-filled" className="w-full" asChild>
+                        <Link href={`/course/${slug}/learn`}>
+                            Continuar
+                        </Link>
+                    </Button>
                 ) : (
-                    <Link
-                        href={`/checkout?course=${slug}`}
-                        className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-lg font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    >
-                        Comprar Ahora
-                    </Link>
+                    <Button variant="accent-filled" className="w-full" asChild>
+                        <Link href={`/checkout?course=${slug}`}>
+                            Comprar Ahora
+                        </Link>
+                    </Button>
                 )}
 
                 <p className="text-center text-xs text-muted-foreground">
@@ -135,6 +132,6 @@ export function CourseSidebar({
                     ) : null}
                 </div>
             </div>
-        </div>
+        </Card>
     );
 }

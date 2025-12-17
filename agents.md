@@ -125,13 +125,16 @@ Configured in `src/app/layout.tsx`:
 
 ## Design System
 
+- Use squared CTAs and form inputs
+- Border CTAs with transparent background. Hover: filled background with border color.
+
 ### Colors
 Semantic tokens defined in `globals.css`:
 - **background/foreground**: Page base colors
-- **primary**: Main brand color, CTAs
+- **primary**: Main brand color, general CTAs
 - **secondary**: Secondary actions
 - **muted**: Subtle backgrounds, disabled states
-- **accent**: Highlights, hover states
+- **accent**: Highlights, hover states, main CTAs
 - **destructive**: Errors, dangerous actions
 - **border/input/ring**: UI element boundaries and focus states
 

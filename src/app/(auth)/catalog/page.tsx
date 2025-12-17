@@ -4,6 +4,7 @@ import { getPublishedCourses, getTags } from "@/lib/strapi";
 import { CourseCard, CourseCardSkeleton } from "@/components/catalog/course-card";
 import { SearchBar } from "@/components/catalog/search-bar";
 import type { CatalogCourse } from "@/types/course";
+import { Button } from "@/components/ui/button";
 
 interface CatalogPageProps {
     searchParams: Promise<{
@@ -21,24 +22,26 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     const params = await searchParams;
 
     return (
-        <div className="container mx-auto py-8 px-4">
+        <div className="w-full py-8 px-4 md:px-8">
             {/* Header */}
-            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="mb-14 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground">Catálogo</h1>
+                    <h1 className="text-3xl font-light text-foreground">Catálogo</h1>
                     <p className="text-muted-foreground mt-1">
                         Explora nuestros cursos de cine y producción audiovisual
                     </p>
                 </div>
-
-                {/* Search Bar */}
-                <SearchBar defaultValue={params.q} />
             </div>
 
-            {/* Filters */}
-            <Suspense fallback={<FiltersSkeleton />}>
-                <FiltersSection currentTag={params.tag} currentLevel={params.level} />
-            </Suspense>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6 ">
+                {/* Search Bar */}
+                <SearchBar defaultValue={params.q} />
+
+                {/* Filters */}
+                <Suspense fallback={<FiltersSkeleton />}>
+                    <FiltersSection currentTag={params.tag} currentLevel={params.level} />
+                </Suspense>
+            </div>
 
             {/* Course Grid */}
             <Suspense fallback={<CourseGridSkeleton />}>
@@ -73,13 +76,13 @@ async function FiltersSection({
     ];
 
     return (
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
             {/* All Courses */}
             <a
                 href="/catalog"
-                className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${!currentTag && !currentLevel
+                className={`inline-flex items-center rounded-full px-4 py-1 text-sm font-medium transition-colors ${!currentTag && !currentLevel
                     ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    : "text-secondary-foreground hover:bg-primary/40"
                     }`}
             >
                 Todos
@@ -90,9 +93,9 @@ async function FiltersSection({
                 <a
                     key={tag.id}
                     href={`/catalog?tag=${tag.slug}`}
-                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${currentTag === tag.slug
+                    className={`inline-flex items-center rounded-full px-4 py-1 text-sm font-medium transition-colors ${currentTag === tag.slug
                         ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        : "text-secondary-foreground hover:bg-primary/40"
                         }`}
                     style={
                         currentTag === tag.slug && tag.color
@@ -114,9 +117,9 @@ async function FiltersSection({
                 <a
                     key={level.value}
                     href={`/catalog?level=${level.value}`}
-                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${currentLevel === level.value
+                    className={`inline-flex items-center rounded-full px-4 py-1 text-sm font-medium transition-colors ${currentLevel === level.value
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        : "bg-muted text-primary hover:bg-primary/40"
                         }`}
                 >
                     {level.label}
@@ -150,7 +153,8 @@ async function CourseGrid({
             courses = courses.filter(
                 (course) =>
                     course.title.toLowerCase().includes(normalizedQuery) ||
-                    course.shortDescription.toLowerCase().includes(normalizedQuery)
+                    course.shortDescription.toLowerCase().includes(normalizedQuery) ||
+                    course.tags.some(tag => tag.name.toLowerCase().includes(normalizedQuery))
             );
         }
     } catch (e) {
@@ -164,7 +168,7 @@ async function CourseGrid({
                 <div className="rounded-full bg-destructive/10 p-4 mb-4">
                     <Filter className="h-8 w-8 text-destructive" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="text-xl font-light text-foreground mb-2">
                     Error al cargar cursos
                 </h3>
                 <p className="text-muted-foreground max-w-md">
@@ -180,7 +184,7 @@ async function CourseGrid({
                 <div className="rounded-full bg-muted p-4 mb-4">
                     <Search className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="text-xl font-light text-foreground mb-2">
                     No hay cursos disponibles
                 </h3>
                 <p className="text-muted-foreground max-w-md">
@@ -189,19 +193,18 @@ async function CourseGrid({
                         : "Pronto agregaremos nuevos cursos al catálogo. ¡Vuelve pronto!"}
                 </p>
                 {(tag || level) && (
-                    <a
-                        href="/catalog"
-                        className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                        Ver todos los cursos
-                    </a>
+                    <Button variant="primary" className="mt-4" asChild>
+                        <a href="/catalog">
+                            Ver todos los cursos
+                        </a>
+                    </Button>
                 )}
             </div>
         );
     }
 
     return (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {courses.map((course) => (
                 <CourseCard key={course.id} course={course} />
             ))}
@@ -230,9 +233,12 @@ function FiltersSkeleton() {
  */
 function CourseGridSkeleton() {
     return (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-                <CourseCardSkeleton key={i} />
+                <div
+                    key={i}
+                    className="bg-card border border-border shadow-sm overflow-hidden animate-pulse"
+                />
             ))}
         </div>
     );

@@ -9,6 +9,7 @@ import { BookOpen, Library, User, Settings, LogOut, Menu as MenuIcon, X } from "
 import { AnimatePresence, motion } from "framer-motion"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 export function Navbar() {
     const pathname = usePathname()
@@ -38,39 +39,41 @@ export function Navbar() {
     )
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <header className="sticky top-0 z-50 w-full border-b border-border bg-main/95 backdrop-blur supports-[backdrop-filter]:bg-main/60">
+            <div className="w-full flex py-5 items-center justify-between px-4 md:px-8">
                 <div className="flex items-center gap-8">
                     <Link href="/" className="flex items-center space-x-2">
-                        <span className="text-xl font-bold tracking-tight">ESCUELA DE CINE</span>
+                        <span className="text-2xl tracking-tight">Cursos</span>
                     </Link>
                 </div>
 
-                <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-                    {filteredRoutes.map((route) => (
-                        <Link
-                            key={route.href}
-                            href={route.href}
-                            className={cn(
-                                "transition-colors hover:text-foreground/80 border-b-[3px] p-1",
-                                route.active
-                                    ? "text-foreground font-semibold border-primary"
-                                    : "text-foreground/60 border-transparent"
-                            )}
-                        >
-                            {route.label}
-                        </Link>
-                    ))}
-                </nav>
+
 
                 <div className="flex items-center gap-4">
+                    <nav className="hidden md:flex items-center space-x-6 text-sm font-light uppercase">
+                        {filteredRoutes.map((route) => (
+                            <Link
+                                key={route.href}
+                                href={route.href}
+                                className={cn(
+                                    "transition-colors hover:text-foreground/80 border-b-[3px] p-1",
+                                    route.active
+                                        ? "text-foreground font-semibold border-primary"
+                                        : "text-foreground/60 border-transparent"
+                                )}
+                            >
+                                {route.label}
+                            </Link>
+                        ))}
+                    </nav>
+
                     {isAuthenticated ? (
                         <Menu as="div" className="relative ml-3">
                             <div>
                                 <MenuButton className="relative flex rounded-full bg-main text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                                     <span className="absolute -inset-1.5" />
                                     <span className="sr-only">Open user menu</span>
-                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                                         {session?.user?.name?.[0] || "U"}
                                     </div>
                                 </MenuButton>
@@ -138,15 +141,14 @@ export function Navbar() {
                         </Menu>
                     ) : (
                         <div className="hidden md:flex items-center space-x-4">
-                            <Link href="/login" className="text-sm font-medium hover:underline">
+                            <Link href="/login" className="text-sm font-light uppercase hover:underline">
                                 Iniciar Sesión
                             </Link>
-                            <Link
-                                href="/register"
-                                className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                            >
-                                Registrarse
-                            </Link>
+                            <Button variant="accent" asChild>
+                                <Link href="/register">
+                                    Registrarse
+                                </Link>
+                            </Button>
                         </div>
                     )}
 
@@ -171,9 +173,9 @@ export function Navbar() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="md:hidden border-t border-border bg-background"
+                        className="md:hidden border-t border-border"
                     >
-                        <div className="space-y-1 px-4 pb-3 pt-2">
+                        <div className="py-8 px-4 ">
                             {filteredRoutes.map((route) => (
                                 <Link
                                     key={route.href}
@@ -193,14 +195,14 @@ export function Navbar() {
                                 <>
                                     <Link
                                         href="/login"
-                                        className="block rounded-md px-3 py-2 text-base font-medium text-foreground/60 hover:bg-muted hover:text-foreground"
+                                        className="block px-3 py-2 text-base text-sm font-light uppercase text-foreground hover:bg-muted hover:text-foreground"
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
                                         Iniciar Sesión
                                     </Link>
                                     <Link
                                         href="/register"
-                                        className="block rounded-md px-3 py-2 text-base font-medium text-foreground/60 hover:bg-muted hover:text-foreground"
+                                        className="block  px-3 py-2 text-base text-sm font-light uppercase text-foreground hover:bg-muted hover:text-foreground"
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
                                         Registrarse

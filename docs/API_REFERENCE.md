@@ -41,21 +41,38 @@ Content-Type: application/json
 
 ### Get User by Email (Server-side)
 ```http
-GET /api/users/me?email=user@email.com
+GET /api/users?filters[email][$eq]=user@email.com
 Authorization: Bearer {API_TOKEN}
 ```
-
 > **Note:** This endpoint uses Strapi API Token, not user JWT. Called from Next.js backend.
+> **Strapi v5 Update:** Endpoint changed from `/api/users/me?email=...` to use proper filter syntax.
 
-**Response:**
+**Response Structure:**
 ```json
+// Strapi v5 (direct array)
+[
+  {
+    "id": 1,
+    "username": "johndoe",
+    "email": "user@email.com",
+    "displayName": "John Doe",
+    "avatar": {...},
+    "courses": [...]
+  }
+]
+
+// Strapi v4 (wrapped in data)
 {
-  "id": 1,
-  "username": "johndoe",
-  "email": "user@email.com",
-  "displayName": "John Doe",
-  "avatar": {...},
-  "courses": [...]
+  "data": [
+    {
+      "id": 1,
+      "username": "johndoe",
+      "email": "user@email.com",
+      "displayName": "John Doe",
+      "avatar": {...},
+      "courses": [...]
+    }
+  ]
 }
 ```
 
@@ -156,11 +173,14 @@ Content-Type: application/json
 
 {
   "data": {
+    "id": 123,
     "currentLesson": "lesson-slug",
-    "completedLessons": ["lesson-1", "lesson-2"]
+    "completedLessons": ["lesson-1", "lesson-2"],
+    "lastAccessedAt": "2025-12-11T19:00:00.000Z"
   }
 }
 ```
+> **Strapi v5 Requirement:** Must include `id` field inside `data` object along with URL ID.
 > Auto-calculates: `progressPercentage`, `enrollmentStatus`, `completedAt`
 
 ### Continue Watching
@@ -171,10 +191,14 @@ Authorization: Bearer {jwt}
 
 Returns most recent active enrollment or `{ "data": null }`.
 
-### Validate Access (Public)
+### Validate Access (Server-side)
 ```http
-GET /api/enrollments/validate-access?courseId={id}&userId={id}
+GET /api/enrollments?filters[course][id][$eq]={courseId}&filters[user][id][$eq]={userId}
+Authorization: Bearer {user_jwt} OR {API_TOKEN}
 ```
+> **Note:** Prefer user JWT token over API Token for enrollment access. Called from Next.js backend to validate course access.
+> **Implementation:** Returns `true` if user has at least one enrollment for the course (any status).
+> **Authentication:** Uses user's JWT token from session (`session.strapiToken`) when available, falls back to API Token.
 
 **Enrollment Schema:**
 | Field | Type | Description |
@@ -206,6 +230,62 @@ GET /api/enrollments/validate-access?courseId={id}&userId={id}
 | `duration` | Integer | Duration in minutes |
 | `freePreview` | Boolean | Free preview enabled |
 | `order` | Integer | Display order |
+
+---
+
+## Strapi v5 Compatibility Notes
+
+### Authentication Flow Updates
+
+**Issue Resolution History:**
+1. **403 Forbidden Error**: Fixed invalid API endpoint `/api/users/me?email=...` → `/api/users?filters[email][$eq]=...`
+2. **User Not Found Error**: Fixed response structure handling for Strapi v5 (direct array vs wrapped in `data` property)
+3. **404 Validate Access Error**: Fixed missing `/api/enrollments/validate-access` endpoint → use standard `/api/enrollments` with filters
+4. **401 Unauthorized Error**: Fixed authentication by using user JWT token (`session.strapiToken`) instead of API Token for enrollment access
+5. **400 Invalid Enrollment ID**: Fixed Strapi v5 PUT format by including `id` field inside `data` object for enrollment updates
+
+**Environment Variables Required:**
+```env
+STRAPI_API_TOKEN=your_strapi_api_token_here
+NEXT_PUBLIC_STRAPI_URL=http://localhost:1337
+```
+
+**Response Structure Changes:**
+- **Strapi v4**: `{ "data": [users] }`
+- **Strapi v5**: `[users]` (direct array)
+
+**Implementation Details:**
+- Updated `getStrapiUser()` function in `src/lib/strapi.ts` to handle both response formats
+- Added compatibility layer: `const users = Array.isArray(data) ? data : (data.data || [])`
+- Fixed missing `EnrollmentAttributes` import in strapi utilities
+- Updated `useCourseProgress` hook to call Strapi directly with correct v5 payload format
+- Modified `UpdateProgressData` type to include optional `id` field
+- Removed internal API proxy for enrollment updates to ensure correct Strapi v5 format
+
+### NextAuth Integration
+
+**JWT Callback Flow:**
+```typescript
+// In src/app/api/auth/[...nextauth]/route.ts
+async jwt({ token, user, account }) {
+  // Refresh Strapi user data using API Token (server-side)
+  if (token.email && process.env.STRAPI_API_TOKEN) {
+    try {
+      const strapiUser = await getStrapiUser(token.email);
+      token.strapiUser = strapiUser;
+    } catch (error) {
+      console.error("Error fetching Strapi user:", error);
+    }
+  }
+  return token;
+}
+```
+
+**Common Error Patterns:**
+- **403 Forbidden**: Missing or invalid `STRAPI_API_TOKEN`
+- **User Not Found**: Incorrect API endpoint or response structure handling
+- **TypeScript Errors**: Missing imports for type definitions
+- **400 Invalid Enrollment ID**: Missing `id` field in `data` object for Strapi v5 PUT requests
 
 ---
 

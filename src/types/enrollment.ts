@@ -83,6 +83,7 @@ export interface EnrollmentResponse {
  * Data to update enrollment progress
  */
 export interface UpdateProgressData {
+  id?: number;
   currentLesson?: string;
   completedLessons?: string[];
   lastAccessedAt?: string;

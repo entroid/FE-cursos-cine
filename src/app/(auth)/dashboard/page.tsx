@@ -2,13 +2,81 @@
 
 import { useEnrollments } from "@/hooks/use-enrollments";
 import { useContinueWatching } from "@/hooks/use-continue-watching";
+import { useSession } from "next-auth/react";
+import { useEffect, useState, useRef } from "react";
+import { getPublishedCourses } from "@/lib/strapi";
+import type { CatalogCourse } from "@/types/course";
 import Link from "next/link";
+import { Card, CardInteractive } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
-    const { enrollments, loading: enrollmentsLoading } = useEnrollments();
+    const { enrollments, loading: enrollmentsLoading, refresh: refreshEnrollments } = useEnrollments();
     const { enrollment: continueWatching, loading: continueLoading } = useContinueWatching();
+    const { data: session } = useSession();
+    const [isCheckingEnrollments, setIsCheckingEnrollments] = useState(false);
+    const hasCheckedEnrollments = useRef(false);
 
     const isLoading = enrollmentsLoading || continueLoading;
+
+    // Check and create missing enrollments (runs once after initial load)
+    useEffect(() => {
+        const checkAndCreateEnrollments = async () => {
+            // Only run once and only when we have data
+            if (hasCheckedEnrollments.current || !session?.strapiToken || enrollmentsLoading) return;
+
+            hasCheckedEnrollments.current = true;
+            setIsCheckingEnrollments(true);
+
+            try {
+                // Get all published courses
+                const courses = await getPublishedCourses();
+
+                // Check which courses user has access to (for now, assume all courses are accessible)
+                // In a real implementation, you'd check user permissions/purchases
+                const accessibleCourses = courses;
+
+                // Find courses that user has access to but no enrollment exists
+                const enrolledCourseIds = enrollments.map(e => e.course.id);
+                const missingEnrollments = accessibleCourses.filter(
+                    course => !enrolledCourseIds.includes(course.id)
+                );
+
+                // Create missing enrollments
+                for (const course of missingEnrollments) {
+                    try {
+                        const response = await fetch("/api/enrollments", {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${session.strapiToken}`,
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({ courseId: course.id }),
+                        });
+
+                        if (response.ok) {
+                            console.log(`Created enrollment for course: ${course.title}`);
+                        } else {
+                            console.error(`Failed to create enrollment for course: ${course.title}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error creating enrollment for ${course.title}:`, error);
+                    }
+                }
+
+                // Refresh enrollments if we created any new ones
+                if (missingEnrollments.length > 0) {
+                    await refreshEnrollments();
+                }
+            } catch (error) {
+                console.error("Error checking enrollments:", error);
+            } finally {
+                setIsCheckingEnrollments(false);
+            }
+        };
+
+        checkAndCreateEnrollments();
+    }, [session?.strapiToken, enrollmentsLoading, refreshEnrollments, enrollments]);
 
     // Filter enrollments to exclude the one shown in "Continue Watching"
     const filteredEnrollments = enrollments.filter(enrollment =>
@@ -18,135 +86,144 @@ export default function DashboardPage() {
     const showEnrollmentsSection = isLoading || filteredEnrollments.length > 0 || enrollments.length === 0;
 
     return (
-        <div className="container mx-auto py-8 px-4">
+        <div className="w-full py-8 px-4 md:px-8">
             {/* <h1 className="mb-8 text-3xl font-bold text-foreground">Mis Cursos</h1> */}
 
             {/* Continue Watching Section */}
             {!continueLoading && continueWatching && (
                 <section className="mb-20">
-                    <h2 className="mb-4 text-xl font-semibold text-foreground">Continuar Viendo</h2>
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <div className="group bg-card rounded-xl border border-border shadow-sm overflow-hidden flex flex-col destacado transition-all hover:shadow-lg hover:border-primary/50 ">
-                            {continueWatching.course.coverImage ? (
-                                <img
-                                    src={continueWatching.course.coverImage}
-                                    alt={continueWatching.course.title}
-                                    className="aspect-video w-full object-cover transition-transform group-hover:scale-105"
-                                />
-                            ) : (
-                                <div className="aspect-video w-full bg-muted" />
-                            )}
-                            <div className="p-6 flex flex-col flex-1">
-                                <h3 className="text-xl font-semibold leading-none tracking-tight text-foreground mb-2 group-hover:text-primary transition-colors">
-                                    {continueWatching.course.title}
-                                </h3>
-                                {continueWatching.currentLesson && (
-                                    <p className="text-sm text-muted-foreground mb-4 line-clamp-1">
-                                        {typeof continueWatching.currentLesson === 'string'
-                                            ? continueWatching.currentLesson
-                                            : continueWatching.currentLesson.title}
-                                    </p>
+                    <div className="flex justify-center">
+                        <div className="w-full max-w-lg lg:max-w-md">
+                            <CardInteractive>
+                                {continueWatching.course.coverImage ? (
+                                    <img
+                                        src={continueWatching.course.coverImage}
+                                        alt={continueWatching.course.title}
+                                        className="aspect-video w-full object-cover transition-transform group-hover:scale-105"
+                                    />
+                                ) : (
+                                    <div className="aspect-video w-full bg-muted" />
                                 )}
+                                <div className="p-6 flex flex-col flex-1">
+                                    <h3 className="text-2xl font-regular leading-none tracking-tight text-foreground mb-4 group-hover:text-primary transition-colors">
+                                        {continueWatching.course.title}
+                                    </h3>
+                                    {continueWatching.currentLesson && (
+                                        <p className="text-sm text-muted-foreground mb-4 line-clamp-1">
+                                            {typeof continueWatching.currentLesson === 'string'
+                                                ? continueWatching.currentLesson
+                                                : continueWatching.currentLesson.title}
+                                        </p>
+                                    )}
 
-                                <div className="mt-auto mb-6">
-                                    <div className="flex items-center justify-between text-sm mb-2 text-foreground">
-                                        <span>Progreso: {Math.round(continueWatching.progressPercentage)}%</span>
-                                        <span>{continueWatching.enrollmentStatus === 'completed' ? 'Completado' : 'En progreso'}</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-primary transition-all"
-                                            style={{ width: `${continueWatching.progressPercentage}%` }}
-                                        />
+                                    <div className="mt-auto mb-4">
+                                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
+                                            <div
+                                                className="h-full bg-primary transition-all"
+                                                style={{ width: `${continueWatching.progressPercentage}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                            <span>Progreso: {Math.round(continueWatching.progressPercentage)}%</span>
+                                            <span>{continueWatching.enrollmentStatus === 'completed' ? 'Completado' : 'En progreso'}</span>
+                                        </div>
+                                        <Button variant="accent-filled" className="w-full" asChild>
+                                            <Link
+                                                href={
+                                                    continueWatching.currentLesson
+                                                        ? `/course/${continueWatching.course.slug}/learn?lesson=${typeof continueWatching.currentLesson === 'string'
+                                                            ? continueWatching.currentLesson
+                                                            : continueWatching.currentLesson.lessonId
+                                                        }`
+                                                        : `/course/${continueWatching.course.slug}`
+                                                }
+                                            >
+                                                {continueWatching.currentLesson ? 'Continuar Lección' : 'Comenzar Curso'}
+                                            </Link>
+                                        </Button>
                                     </div>
                                 </div>
-
-                                <Link
-                                    href={`/course/${continueWatching.course.slug}`}
-                                    className="inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                >
-                                    {continueWatching.currentLesson ? 'Continuar Lección' : 'Comenzar Curso'}
-                                </Link>
-                            </div>
+                            </CardInteractive>
                         </div>
                     </div>
                 </section>
             )}
 
             {/* My Enrollments Section */}
-            {showEnrollmentsSection && (
-                <section>
-                    <h2 className="mb-4 text-xl font-semibold text-foreground">Más Inscripciones</h2>
+            {
+                showEnrollmentsSection && (
+                    <section>
+                        <h2 className="mb-4 text-xl font-light text-foreground">Continuar aprendiendo:</h2>
 
-                    {isLoading ? (
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="bg-card rounded-xl border border-border shadow-sm overflow-hidden animate-pulse">
-                                    <div className="aspect-video w-full bg-muted" />
-                                    <div className="p-6">
-                                        <div className="h-4 bg-muted rounded mb-4" />
-                                        <div className="h-2 bg-muted rounded mb-2" />
-                                        <div className="h-3 bg-muted rounded w-1/2" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : enrollments.length === 0 ? (
-                        <div className="text-center py-12 bg-card rounded-xl border border-border">
-                            <p className="text-muted-foreground">No tienes cursos inscritos aún.</p>
-                            <Link
-                                href="/catalog"
-                                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 mt-4"
-                            >
-                                Explorar Cursos
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {filteredEnrollments.map((enrollment) => {
-                                const imageUrl = enrollment.course.coverImage;
-                                return (
-                                    <Link
-                                        key={enrollment.id}
-                                        href={`/course/${enrollment.course.slug}`}
-                                        className="group bg-card rounded-xl border border-border shadow-sm overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 "
-                                    >
-                                        {imageUrl ? (
-                                            <img
-                                                src={imageUrl}
-                                                alt={enrollment.course.title}
-                                                className="aspect-video w-full object-cover transition-transform group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="aspect-video w-full bg-muted" />
-                                        )}
-
+                        {isLoading ? (
+                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                                {[1, 2, 3].map((i) => (
+                                    <CardInteractive key={i} className="animate-pulse">
+                                        <div className="aspect-video w-full bg-muted" />
                                         <div className="p-6">
-                                            <h3 className="text-lg font-semibold leading-none tracking-tight text-foreground mb-4 group-hover:text-primary transition-colors">
-                                                {enrollment.course.title}
-                                            </h3>
-                                            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
-                                                <div
-                                                    className="h-full bg-primary transition-all"
-                                                    style={{ width: `${enrollment.progressPercentage}%` }}
-                                                />
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                {Math.round(enrollment.progressPercentage)}% Completado
-                                            </p>
-                                            {enrollment.enrollmentStatus === 'completed' && (
-                                                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 mt-2">
-                                                    ✓ Completado
-                                                </span>
-                                            )}
+                                            <div className="h-4 bg-muted rounded mb-4" />
+                                            <div className="h-2 bg-muted rounded mb-2" />
+                                            <div className="h-3 bg-muted rounded w-1/2" />
                                         </div>
+                                    </CardInteractive>
+                                ))}
+                            </div>
+                        ) : enrollments.length === 0 ? (
+                            <Card padding="lg" className="text-center py-12">
+                                <p className="text-muted-foreground">No tienes cursos inscritos aún.</p>
+                                <Button variant="primary" className="mt-4" asChild>
+                                    <Link href="/catalog">
+                                        Explorar Cursos
                                     </Link>
-                                );
-                            })}
-                        </div>
-                    )}
-                </section>
-            )}
-        </div>
+                                </Button>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                                {filteredEnrollments.map((enrollment) => {
+                                    const imageUrl = enrollment.course.coverImage;
+                                    return (
+                                        <Link
+                                            key={enrollment.id}
+                                            href={`/course/${enrollment.course.slug}`}
+                                            className="group bg-card border border-border shadow-sm overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 "
+                                        >
+                                            {imageUrl ? (
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={enrollment.course.title}
+                                                    className="aspect-video w-full object-cover transition-transform group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="aspect-video w-full bg-muted" />
+                                            )}
+
+                                            <div className="p-6">
+                                                <h3 className="text-2xl font-light leading-none tracking-tight text-foreground mb-4 group-hover:text-primary transition-colors">
+                                                    {enrollment.course.title}
+                                                </h3>
+                                                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
+                                                    <div
+                                                        className="h-full bg-primary transition-all"
+                                                        style={{ width: `${enrollment.progressPercentage}%` }}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Progreso: {Math.round(enrollment.progressPercentage)}%
+                                                </p>
+                                                {enrollment.enrollmentStatus === 'completed' && (
+                                                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 mt-2">
+                                                        ✓ Completado
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </section>
+                )
+            }
+        </div >
     );
 }
