@@ -4,7 +4,7 @@ Professional frontend for the Cine School online platform - an alternative film 
 
 ## Tech Stack
 
-- **Next.js 16.0.6** (App Router, React 19)
+- **Next.js 16.0.10** (App Router, React 19)
 - **TypeScript**
 - **Tailwind CSS v3.4** (Production-ready)
 - **Headless UI** (Accessible component primitives)

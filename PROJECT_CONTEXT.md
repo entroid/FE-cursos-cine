@@ -1,5 +1,17 @@
 # Project Context: Escuela de Cine
 
+## Technology Stack
+
+### Core Framework
+- **Next.js**: 16.0.10 (App Router)
+- **React**: 19.2.0
+- **TypeScript**: Latest
+
+### Development Tools
+- **Build**: Next.js with Turbopack (dev), optimized production builds
+- **Linting**: ESLint + Prettier
+- **Package Manager**: npm
+
 ## Vision
 A professional online course platform for alternative and experimental cinema. The goal is to provide a premium, immersive learning experience that feels like a "cine editorial" rather than a generic LMS.
 
