@@ -115,19 +115,24 @@ export default async function CourseDetailPage({
                     <section className="border-t pt-8 mt-8">
                         <h2 className="mb-4 text-2xl font-light text-foreground">Contenido del Curso</h2>
                         <div className="space-y-4">
-                            {sortModules(course.modules).length === 0 ? (
-                                <Card padding="sm" className="text-sm text-muted-foreground">
-                                    El contenido de este curso estará disponible próximamente.
-                                </Card>
-                            ) : (
-                                sortModules(course.modules).map((module) => (
+                            {(() => {
+                                const sortedModules = sortModules(course.modules);
+                                if (sortedModules.length === 0) {
+                                    return (
+                                        <Card padding="sm" className="text-sm text-muted-foreground">
+                                            El contenido de este curso estará disponible próximamente.
+                                        </Card>
+                                    );
+                                }
+                                return sortedModules.map((module, index) => (
                                     <ModuleAccordion
                                         key={module.id}
                                         module={module}
                                         courseSlug={course.slug}
+                                        defaultOpen={index === 0}
                                     />
-                                ))
-                            )}
+                                ));
+                            })()}
                         </div>
                     </section>
                 </div>

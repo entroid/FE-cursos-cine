@@ -67,9 +67,16 @@ export function CourseCard({ course }: CourseCardProps) {
                         ) : (
                             <span />
                         )}
-                        <span className="text-base font-bold text-foreground">
-                            {formatPrice(course.priceArg, "ARS")}
-                        </span>
+                        <div className="text-right">
+                            <div className="text-base font-bold text-foreground">
+                                {formatPrice(course.priceArg, "ARS")}
+                            </div>
+                            {course.priceUsd && (
+                                <div className="text-[10px] text-muted-foreground">
+                                    {formatPrice(course.priceUsd, "USD")}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Title */}

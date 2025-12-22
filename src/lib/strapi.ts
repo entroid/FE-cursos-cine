@@ -582,7 +582,7 @@ export function flattenEnrollment(enrollment: Enrollment | EnrollmentFlat): Flat
     const attrs = hasAttributes(enrollment) ? enrollment.attributes : enrollment;
     const courseField = (attrs as { course?: unknown }).course;
     let courseId = 0;
-    let courseAttrs: { title?: string; slug?: string; coverImage?: string | { url: string } | null; totalLessons?: number } = {};
+    let courseAttrs: { title?: string; slug?: string; coverImage?: string | { url: string } | null; totalLessons?: number; priceArg?: number; priceUsd?: number } = {};
 
     if (hasCourseData(courseField)) {
         courseId = courseField.data.id;
@@ -613,6 +613,8 @@ export function flattenEnrollment(enrollment: Enrollment | EnrollmentFlat): Flat
                 return getStrapiMedia(cover.url);
             })(),
             totalLessons: courseAttrs?.totalLessons,
+            priceArg: courseAttrs?.priceArg,
+            priceUsd: courseAttrs?.priceUsd,
         },
     };
 }

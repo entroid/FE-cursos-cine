@@ -42,32 +42,33 @@ export function Navbar() {
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-main/95 backdrop-blur supports-[backdrop-filter]:bg-main/60">
             <div className="w-full flex py-5 items-center justify-between px-4 md:px-8">
-                <div className="flex items-center gap-8">
+                {/* Logo - Left */}
+                <div className="flex-1 flex items-center">
                     <Link href="/" className="flex items-center space-x-2">
                         <span className="text-2xl tracking-tight">Cursos</span>
                     </Link>
                 </div>
 
+                {/* Navigation - Center */}
+                <nav className="hidden md:flex items-center space-x-6 text-sm font-light uppercase">
+                    {filteredRoutes.map((route) => (
+                        <Link
+                            key={route.href}
+                            href={route.href}
+                            className={cn(
+                                "transition-colors hover:text-foreground/80 border-b-[3px] p-1",
+                                route.active
+                                    ? "text-foreground font-semibold border-primary"
+                                    : "text-foreground/60 border-transparent"
+                            )}
+                        >
+                            {route.label}
+                        </Link>
+                    ))}
+                </nav>
 
-
-                <div className="flex items-center gap-4">
-                    <nav className="hidden md:flex items-center space-x-6 text-sm font-light uppercase">
-                        {filteredRoutes.map((route) => (
-                            <Link
-                                key={route.href}
-                                href={route.href}
-                                className={cn(
-                                    "transition-colors hover:text-foreground/80 border-b-[3px] p-1",
-                                    route.active
-                                        ? "text-foreground font-semibold border-primary"
-                                        : "text-foreground/60 border-transparent"
-                                )}
-                            >
-                                {route.label}
-                            </Link>
-                        ))}
-                    </nav>
-
+                {/* Profile/Auth & Mobile Menu - Right */}
+                <div className="flex-1 flex items-center justify-end gap-4">
                     {isAuthenticated ? (
                         <Menu as="div" className="relative ml-3">
                             <div>

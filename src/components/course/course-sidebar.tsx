@@ -14,6 +14,7 @@ interface CourseSidebarProps {
     priceUsd?: number;
     estimatedDuration: number;
     level: CourseLevel;
+    noCard?: boolean;
 }
 
 export function CourseSidebar({
@@ -23,6 +24,7 @@ export function CourseSidebar({
     priceUsd,
     estimatedDuration,
     level,
+    noCard = false,
 }: CourseSidebarProps) {
     const { enrollments, loading } = useEnrollments();
 
@@ -36,11 +38,9 @@ export function CourseSidebar({
         Math.round(estimatedDuration * (1 - progress / 100))
     );
 
-    const primaryPrice = formatPrice(priceArg, "ARS");
-
-    return (
-        <Card padding="none">
-            <div className="p-6 border-b border-border space-y-2">
+    const content = (
+        <>
+            <div className={`${noCard ? "p-4" : "p-6"} border-b border-border space-y-2`}>
                 {enrollment ? (
                     <div className="flex items-baseline justify-between gap-2">
                         <span className="text-xs font-light inline-flex rounded-full bg-muted text-foreground px-2.5 py-0.5">
@@ -52,27 +52,26 @@ export function CourseSidebar({
                     </div>
                 ) : (
                     <>
-                        <div className="flex items-baseline justify-between gap-2">
-                            <h3 className="text-3xl font-bold text-foreground">
-                                {primaryPrice}
+                        <div className="flex flex-col gap-1">
+                            <h3 className="text-2xl font-bold text-foreground">
+                                {formatPrice(priceArg, "ARS")}
                             </h3>
-                            <span className="text-xs rounded-full bg-muted px-2.5 py-0.5 text-muted-foreground">
-                                {getLevelLabel(level)}
-                            </span>
+                            {priceUsd ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {formatPrice(priceUsd, "USD")}
+                                </p>
+                            ) : null}
                         </div>
-
-                        {priceUsd ? (
-                            <p className="text-xs text-muted-foreground">
-                                Aproximadamente {formatPrice(priceUsd, "USD")} (USD)
-                            </p>
-                        ) : null}
+                        <span className="text-xs rounded-full bg-muted px-2.5 py-0.5 text-muted-foreground self-start">
+                            {getLevelLabel(level)}
+                        </span>
 
                         <p className="text-sm text-muted-foreground">Acceso de por vida</p>
                     </>
                 )}
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className={noCard ? "p-4 space-y-4" : "p-6 space-y-4"}>
                 {loading ? (
                     <Button variant="primary" className="w-full" disabled>
                         Cargando...
@@ -132,6 +131,16 @@ export function CourseSidebar({
                     ) : null}
                 </div>
             </div>
+        </>
+    );
+
+    if (noCard) {
+        return <div className="bg-card">{content}</div>;
+    }
+
+    return (
+        <Card padding="none">
+            {content}
         </Card>
     );
 }

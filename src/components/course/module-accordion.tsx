@@ -8,10 +8,11 @@ import { formatDuration } from "@/types/course";
 interface ModuleAccordionProps {
     module: Module;
     courseSlug: string;
+    defaultOpen?: boolean;
 }
 
-export function ModuleAccordion({ module, courseSlug }: ModuleAccordionProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function ModuleAccordion({ module, courseSlug, defaultOpen = false }: ModuleAccordionProps) {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
 
     const toggle = () => setIsOpen(!isOpen);
 

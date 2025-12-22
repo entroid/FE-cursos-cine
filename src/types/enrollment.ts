@@ -27,6 +27,8 @@ export interface EnrollmentCourse {
   slug: string;
   coverImage?: string | null;
   totalLessons?: number;
+  priceArg?: number;
+  priceUsd?: number;
 }
 
 /**

@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 
 
 import type { CatalogCourse } from "@/types/course";
+import { formatPrice } from "@/types/course";
 import Link from "next/link";
 import { Card, CardInteractive } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,9 +48,23 @@ export default function DashboardPage() {
                                     <div className="aspect-video w-full bg-muted" />
                                 )}
                                 <div className="p-6 flex flex-col flex-1">
-                                    <h3 className="text-2xl font-regular leading-none tracking-tight text-foreground mb-4 group-hover:text-primary transition-colors">
-                                        {continueWatching.course.title}
-                                    </h3>
+                                    <div className="flex items-center justify-between gap-2 mb-4">
+                                        <h3 className="text-2xl font-regular leading-none tracking-tight text-foreground group-hover:text-primary transition-colors">
+                                            {continueWatching.course.title}
+                                        </h3>
+                                        {continueWatching.course.priceArg && (
+                                            <div className="text-right shrink-0">
+                                                <div className="text-sm font-bold text-foreground">
+                                                    {formatPrice(continueWatching.course.priceArg, "ARS")}
+                                                </div>
+                                                {continueWatching.course.priceUsd && (
+                                                    <div className="text-[10px] text-muted-foreground">
+                                                        {formatPrice(continueWatching.course.priceUsd, "USD")}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                     {continueWatching.currentLesson && (
                                         <p className="text-sm text-muted-foreground mb-4 line-clamp-1">
                                             {typeof continueWatching.currentLesson === 'string'
@@ -140,9 +155,23 @@ export default function DashboardPage() {
                                             )}
 
                                             <div className="p-6">
-                                                <h3 className="text-2xl font-light leading-none tracking-tight text-foreground mb-4 group-hover:text-primary transition-colors">
-                                                    {enrollment.course.title}
-                                                </h3>
+                                                <div className="flex items-center justify-between gap-2 mb-4">
+                                                    <h3 className="text-2xl font-light leading-none tracking-tight text-foreground group-hover:text-primary transition-colors">
+                                                        {enrollment.course.title}
+                                                    </h3>
+                                                    {enrollment.course.priceArg && (
+                                                        <div className="text-right shrink-0">
+                                                            <div className="text-sm font-bold text-foreground">
+                                                                {formatPrice(enrollment.course.priceArg, "ARS")}
+                                                            </div>
+                                                            {enrollment.course.priceUsd && (
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    {formatPrice(enrollment.course.priceUsd, "USD")}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mb-2">
                                                     <div
                                                         className="h-full bg-primary transition-all"

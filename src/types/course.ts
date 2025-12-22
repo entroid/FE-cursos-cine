@@ -215,17 +215,18 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
- * Format price in cents to display string
+ * Format price to display string
+ * Example: 35000, "ARS" -> $35.000 ARS
+ * Example: 35, "USD" -> $35 USD
  */
-export function formatPrice(cents: number, currency: "USD" | "ARS" = "ARS"): string {
-    const amount = cents / 100;
+export function formatPrice(amount: number, currency: "USD" | "ARS" = "ARS"): string {
     const formatter = new Intl.NumberFormat("es-AR", {
-        style: "currency",
-        currency,
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
+        useGrouping: true,
     });
-    return formatter.format(amount);
+
+    return `$${formatter.format(amount)} ${currency}`;
 }
 
 /**

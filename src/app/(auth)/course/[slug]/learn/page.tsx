@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { CheckCircle, PlayCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle, PlayCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react"
 import { getCourseBySlug } from "@/lib/strapi"
 import { validateCourseAccess } from "@/lib/strapi"
 import type { Course, Module, Lesson } from "@/types/course"
@@ -9,6 +9,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { CourseProgressTracker } from "@/components/course/course-progress-tracker"
 import { Button } from "@/components/ui/button"
+
+import { CourseSidebar } from "@/components/course/course-sidebar"
 
 function sortModules(modules: Module[] | undefined): Module[] {
     if (!modules) return []
@@ -112,7 +114,42 @@ export default async function CoursePlayerPage({
 
     return (
         <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
-            <div className="flex-1 max-w-6xl mx-auto p-6 md:p-12">
+            <div className="flex-1 max-w-6xl mx-auto px-0 py-4 lg:px-12 md:pb-8">
+                <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 sm:mb-2">
+                    <Link
+                        href={`/course/${slug}`}
+                        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        <h3 className="text-sm font-light uppercase tracking-wider">
+                            {course.title}
+                        </h3>
+                    </Link>
+
+                    <div className="flex gap-2">
+                        {prevLesson ? (
+                            <Button variant="accent" size="sm" asChild>
+                                <Link
+                                    href={`/course/${slug}/learn?lesson=${encodeURIComponent(prevLesson.lessonId || prevLesson.id.toString())}`}
+                                >
+                                    <ChevronLeft className="mr-2 h-4 w-4" />
+                                    Anterior
+                                </Link>
+                            </Button>
+                        ) : null}
+                        {nextLesson ? (
+                            <Button variant="accent" size="sm" asChild>
+                                <Link
+                                    href={`/course/${slug}/learn?lesson=${encodeURIComponent(nextLesson.lessonId || nextLesson.id.toString())}`}
+                                >
+                                    Siguiente
+                                    <ChevronRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        ) : null}
+                    </div>
+                </div>
+
                 <div className="mb-6 aspect-video w-full bg-black flex items-center justify-center">
                     {currentLesson?.videoUrl ? (
                         <iframe
@@ -128,34 +165,8 @@ export default async function CoursePlayerPage({
                     )}
                 </div>
 
-                <div className="mb-6 flex items-center justify-between ">
+                <div className="mb-6">
                     <h1 className="text-3xl font-light text-foreground">{currentLesson?.title || ""}</h1>
-                    <div className="flex gap-2">
-                        {prevLesson ? (
-                            <Button variant="accent" size="sm" asChild>
-                                <Link
-                                    href={`/course/${slug}/learn?lesson=${encodeURIComponent(prevLesson.lessonId || prevLesson.id.toString())}`}
-                                >
-                                    <ChevronLeft className="mr-2 h-4 w-4" />
-                                    Anterior
-                                </Link>
-                            </Button>
-                        ) : (
-                            <span />
-                        )}
-                        {nextLesson ? (
-                            <Button variant="accent" size="sm" asChild>
-                                <Link
-                                    href={`/course/${slug}/learn?lesson=${encodeURIComponent(nextLesson.lessonId || nextLesson.id.toString())}`}
-                                >
-                                    Siguiente
-                                    <ChevronRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        ) : (
-                            <span />
-                        )}
-                    </div>
                 </div>
 
                 <div className="prose max-w-none dark:prose-invert text-foreground">
@@ -184,6 +195,19 @@ export default async function CoursePlayerPage({
             </div>
 
             <div className="w-full border-l border-border bg-muted/10 lg:w-80 flex flex-col ">
+                {!hasAccess && (
+                    <div className="border-b border-border">
+                        <CourseSidebar
+                            courseId={course.id}
+                            slug={course.slug}
+                            priceArg={course.priceArg}
+                            priceUsd={course.priceUsd}
+                            estimatedDuration={course.estimatedDuration}
+                            level={course.level}
+                            noCard
+                        />
+                    </div>
+                )}
                 <div className="flex h-14 items-center border-b border-border px-4 font-light text-foreground">
                     Contenido del Curso
                 </div>
@@ -199,8 +223,25 @@ export default async function CoursePlayerPage({
                                     {module.title}
                                 </div>
                                 <div>
-                                    {sortLessons(module.lessons).filter(li => hasAccess || li.freePreview).map((lessonItem) => {
+                                    {sortLessons(module.lessons).map((lessonItem) => {
+                                        const isLocked = !hasAccess && !lessonItem.freePreview;
                                         const isActive = (lessonItem.lessonId || lessonItem.id.toString()) === (currentLesson?.lessonId || currentLesson?.id?.toString());
+
+                                        if (isLocked) {
+                                            return (
+                                                <div
+                                                    key={lessonItem.id}
+                                                    className="flex w-full items-start gap-3 px-4 py-3 text-left text-sm text-muted-foreground/50 cursor-not-allowed"
+                                                >
+                                                    <Lock className="mt-0.5 h-4 w-4 text-muted-foreground/50" />
+                                                    <div className="flex-1">
+                                                        <div className="font-medium text-muted-foreground/70">{lessonItem.title}</div>
+                                                        <div className="text-xs text-muted-foreground/50">{lessonItem.duration ? `${formatDuration(lessonItem.duration)}` : ""}</div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+
                                         return (
                                             <Link
                                                 key={lessonItem.id}
