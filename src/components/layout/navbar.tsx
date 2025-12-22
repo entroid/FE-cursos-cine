@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { getStrapiMedia } from "@/lib/strapi"
 
 export function Navbar() {
     const pathname = usePathname()
@@ -70,11 +71,18 @@ export function Navbar() {
                     {isAuthenticated ? (
                         <Menu as="div" className="relative ml-3">
                             <div>
-                                <MenuButton className="relative flex rounded-full bg-main text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
-                                    <span className="absolute -inset-1.5" />
+                                <MenuButton className="relative flex rounded-full bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                     <span className="sr-only">Open user menu</span>
-                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                        {session?.user?.name?.[0] || "U"}
+                                    <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-bold border border-border">
+                                        {(session as any)?.strapiUser?.avatar?.url ? (
+                                            <img
+                                                src={getStrapiMedia((session as any).strapiUser.avatar.url) || ""}
+                                                alt={session?.user?.name || "User"}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <span>{session?.user?.name?.[0] || "U"}</span>
+                                        )}
                                     </div>
                                 </MenuButton>
                             </div>
@@ -105,20 +113,6 @@ export function Navbar() {
                                             >
                                                 <User className="mr-2 h-4 w-4" />
                                                 Perfil
-                                            </Link>
-                                        )}
-                                    </MenuItem>
-                                    <MenuItem>
-                                        {({ active }) => (
-                                            <Link
-                                                href="/settings"
-                                                className={cn(
-                                                    active ? "bg-muted" : "",
-                                                    "flex items-center px-4 py-2 text-sm text-foreground"
-                                                )}
-                                            >
-                                                <Settings className="mr-2 h-4 w-4" />
-                                                Configuración
                                             </Link>
                                         )}
                                     </MenuItem>

@@ -3,8 +3,8 @@
 import { useEnrollments } from "@/hooks/use-enrollments";
 import { useContinueWatching } from "@/hooks/use-continue-watching";
 import { useSession } from "next-auth/react";
-import { useEffect, useState, useRef } from "react";
-import { getPublishedCourses } from "@/lib/strapi";
+
+
 import type { CatalogCourse } from "@/types/course";
 import Link from "next/link";
 import { Card, CardInteractive } from "@/components/ui/card";
@@ -14,69 +14,11 @@ export default function DashboardPage() {
     const { enrollments, loading: enrollmentsLoading, refresh: refreshEnrollments } = useEnrollments();
     const { enrollment: continueWatching, loading: continueLoading } = useContinueWatching();
     const { data: session } = useSession();
-    const [isCheckingEnrollments, setIsCheckingEnrollments] = useState(false);
-    const hasCheckedEnrollments = useRef(false);
+
 
     const isLoading = enrollmentsLoading || continueLoading;
 
-    // Check and create missing enrollments (runs once after initial load)
-    useEffect(() => {
-        const checkAndCreateEnrollments = async () => {
-            // Only run once and only when we have data
-            if (hasCheckedEnrollments.current || !session?.strapiToken || enrollmentsLoading) return;
 
-            hasCheckedEnrollments.current = true;
-            setIsCheckingEnrollments(true);
-
-            try {
-                // Get all published courses
-                const courses = await getPublishedCourses();
-
-                // Check which courses user has access to (for now, assume all courses are accessible)
-                // In a real implementation, you'd check user permissions/purchases
-                const accessibleCourses = courses;
-
-                // Find courses that user has access to but no enrollment exists
-                const enrolledCourseIds = enrollments.map(e => e.course.id);
-                const missingEnrollments = accessibleCourses.filter(
-                    course => !enrolledCourseIds.includes(course.id)
-                );
-
-                // Create missing enrollments
-                for (const course of missingEnrollments) {
-                    try {
-                        const response = await fetch("/api/enrollments", {
-                            method: "POST",
-                            headers: {
-                                Authorization: `Bearer ${session.strapiToken}`,
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({ courseId: course.id }),
-                        });
-
-                        if (response.ok) {
-                            console.log(`Created enrollment for course: ${course.title}`);
-                        } else {
-                            console.error(`Failed to create enrollment for course: ${course.title}`);
-                        }
-                    } catch (error) {
-                        console.error(`Error creating enrollment for ${course.title}:`, error);
-                    }
-                }
-
-                // Refresh enrollments if we created any new ones
-                if (missingEnrollments.length > 0) {
-                    await refreshEnrollments();
-                }
-            } catch (error) {
-                console.error("Error checking enrollments:", error);
-            } finally {
-                setIsCheckingEnrollments(false);
-            }
-        };
-
-        checkAndCreateEnrollments();
-    }, [session?.strapiToken, enrollmentsLoading, refreshEnrollments, enrollments]);
 
     // Filter enrollments to exclude the one shown in "Continue Watching"
     const filteredEnrollments = enrollments.filter(enrollment =>

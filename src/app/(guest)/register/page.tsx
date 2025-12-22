@@ -318,7 +318,7 @@ export default function RegisterPage() {
                     <div>
                         <Button
                             type="submit"
-                            variant="primary"
+                            variant="primary-filled"
                             disabled={loading || !isFormValid()}
                             className="w-full"
                         >

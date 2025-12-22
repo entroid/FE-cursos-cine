@@ -1,76 +1,33 @@
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getStrapiUser, getCurrentUser } from "@/lib/strapi";
+import { redirect } from "next/navigation";
+import ProfileForm from "./profile-form";
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+        redirect("/login");
+    }
+
+    let user;
+    try {
+        if (session.strapiToken) {
+            user = await getCurrentUser(session.strapiToken);
+        } else {
+            // Fallback (unlikely if session exists)
+            user = await getStrapiUser(session.user.email);
+        }
+    } catch (error) {
+        console.error("Error fetching user for profile:", error);
+        // Fallback or error page, but ideally we redirect to login if user not found despite session
+        redirect("/login");
+    }
+
     return (
-        <div className="w-full py-8 px-4 md:px-8">
-            <h1 className="mb-8 text-3xl font-light text-foreground">Mi Perfil</h1>
-
-            <Card className="mb-8">
-                <div className="p-6 border-b border-border">
-                    <h3 className="text-2xl font-light leading-none tracking-tight text-foreground">
-                        Información Personal
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        Actualiza tus datos personales
-                    </p>
-                </div>
-                <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none text-foreground">
-                                Nombre
-                            </label>
-                            <input
-                                defaultValue="Ilya"
-                                className="flex h-10 w-full border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none text-foreground">
-                                Apellido
-                            </label>
-                            <input
-                                defaultValue="Silvakov"
-                                className="flex h-10 w-full border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium leading-none text-foreground">
-                            Email
-                        </label>
-                        <input
-                            defaultValue="ilya@example.com"
-                            disabled
-                            className="flex h-10 w-full border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        />
-                    </div>
-                    <Button variant="primary">
-                        Guardar Cambios
-                    </Button>
-                </div>
-            </Card>
-
-            <Card>
-                <div className="p-6 border-b border-border">
-                    <h3 className="text-2xl font-light leading-none tracking-tight text-foreground">
-                        Seguridad
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        Gestiona tu contraseña y sesiones
-                    </p>
-                </div>
-                <div className="p-6 space-y-4">
-                    <Button variant="primary">
-                        Cambiar Contraseña
-                    </Button>
-                    <div className="h-[1px] w-full bg-border" />
-                    <Button variant="destructive-filled">
-                        Cerrar todas las sesiones
-                    </Button>
-                </div>
-            </Card>
+        <div className="w-full py-8 px-4 md:px-8 max-w-4xl mx-auto">
+            <ProfileForm user={user} />
         </div>
     )
 }

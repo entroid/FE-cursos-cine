@@ -223,7 +223,7 @@ export default function LoginPage() {
                     <div>
                         <Button
                             type="submit"
-                            variant="primary"
+                            variant="primary-filled"
                             disabled={loading || !isFormValid()}
                             className="w-full"
                         >

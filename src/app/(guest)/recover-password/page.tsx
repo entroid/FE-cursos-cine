@@ -36,7 +36,7 @@ export default function RecoverPasswordPage() {
                     <div>
                         <Button
                             type="submit"
-                            variant="primary"
+                            variant="primary-filled"
                             className="w-full"
                         >
                             Enviar Instrucciones

@@ -91,6 +91,10 @@ export async function getStrapiUser(email: string): Promise<StrapiUser> {
     if (!token) {
         throw new Error("Missing STRAPI_API_TOKEN environment variable. Please configure it in your .env.local file.")
     }
+
+    // Debug: Log first 4 chars of token to verify it's loaded (don't log full token)
+    // console.log("[getStrapiUser] Using API Token starting with:", token.substring(0, 4));
+
     const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -105,17 +109,43 @@ export async function getStrapiUser(email: string): Promise<StrapiUser> {
     }
 
     const data = await response.json()
-    
+
     // In Strapi v5, the response structure is different - it returns an array directly
     // not wrapped in a `data` property like in Strapi v4
     const users = Array.isArray(data) ? data : (data.data || [])
-    
+
     // Check if user was found and return the first result
     if (!users || users.length === 0) {
         throw new Error(`User with email ${email} not found`)
     }
-    
+
     return users[0]
+}
+
+/**
+ * Get current user data using their own JWT token ( /api/users/me )
+ * 
+ * @param jwt - User's JWT token
+ * @returns Promise with Strapi user data
+ */
+export async function getCurrentUser(jwt: string): Promise<StrapiUser> {
+    // Note: /api/users/me doesn't support complex filtering, but supports populate
+    const url = `${STRAPI_URL}/api/users/me?populate=*`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${jwt}`,
+        },
+        cache: "no-store",
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch current user: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
 }
 
 // NOTE: User profile should be fetched server-side using API Token per docs
@@ -146,7 +176,7 @@ export async function validateCourseAccess(
     if (!token) {
         throw new Error("Missing authentication token for access validation")
     }
-    
+
     // Check if user has an enrollment for this course (any status except not-started)
     const response = await fetch(
         `${STRAPI_URL}/api/enrollments?filters[course][id][$eq]=${courseId}&filters[user][id][$eq]=${userId}`,
@@ -312,11 +342,95 @@ export async function createStrapiUser(userData: {
     });
 
     if (!response.ok) {
-        throw new Error("Failed to create user");
+        const errorText = await response.text();
+        throw new Error(`Failed to create user: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
     return data as StrapiUser;
+}
+
+/**
+ * Update user data in Strapi
+ * 
+ * @param userId - ID of the user to update
+ * @param data - Data to update (displayName, avatar, etc.)
+ * @param token - JWT token for authentication
+ * @returns Promise with updated user data
+ */
+export async function updateUser(
+    userId: number,
+    data: Omit<Partial<StrapiUser>, 'avatar'> & { avatar?: number | null },
+    token: string
+): Promise<StrapiUser> {
+    const response = await fetch(`${STRAPI_URL}/api/users/${userId}`, {
+        method: "PUT",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.error?.message || response.statusText;
+        throw new Error(`Strapi Error: ${errorMessage}`);
+    }
+
+    const result = await response.json();
+    return result;
+}
+
+/**
+ * Delete user account in Strapi
+ * 
+ * @param userId - ID of the user to delete
+ * @param token - JWT token
+ */
+export async function deleteUser(userId: number, token: string): Promise<void> {
+    const response = await fetch(`${STRAPI_URL}/api/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to delete user");
+    }
+}
+
+/**
+ * Upload a file to Strapi Media Library
+ * 
+ * @param file - File object to upload
+ * @param token - JWT token
+ * @returns Promise with uploaded file data (including ID)
+ */
+export async function uploadFile(file: File, token: string): Promise<{ id: number; url: string }> {
+    const formData = new FormData();
+    formData.append("files", file);
+
+    const response = await fetch(`${STRAPI_URL}/api/upload`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    if (!data || data.length === 0) {
+        throw new Error("Upload failed, no data returned");
+    }
+
+    return data[0];
 }
 
 // ============================================================================
@@ -607,7 +721,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
         }
 
         const data: CoursesResponse = await response.json();
-        
+
         if (!data.data || data.data.length === 0) {
             console.warn(`Course with slug "${slug}" not found in Strapi`);
             return null;

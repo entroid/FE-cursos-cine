@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import {
     loginUser,
     getStrapiUser,
+    getCurrentUser,
     findUserByEmail,
     createStrapiUser,
 } from "@/lib/strapi";
@@ -90,8 +91,26 @@ export const authOptions: NextAuthOptions = {
                 token.userId = user.id;
             }
 
-            // Refresh Strapi user data using API Token (server-side)
-            if (token.email && process.env.STRAPI_API_TOKEN) {
+            // Refresh Strapi user data
+            if (token.strapiToken) {
+                try {
+                    // Method 1: Use user's own token (Preferred if authenticated)
+                    const currentUser = await getCurrentUser(token.strapiToken as string);
+                    token.strapiUser = currentUser;
+                } catch (error) {
+                    console.error("Error fetching current user with JWT:", error);
+                    // Fallback to API Token method if JWT fails (e.g. expired)
+                    if (token.email && process.env.STRAPI_API_TOKEN) {
+                        try {
+                            const strapiUser = await getStrapiUser(token.email);
+                            token.strapiUser = strapiUser;
+                        } catch (adminError) {
+                            console.error("Fallback admin fetch failed:", adminError);
+                        }
+                    }
+                }
+            } else if (token.email && process.env.STRAPI_API_TOKEN) {
+                // Method 2: Use API Token (Server-side only, no user session yet)
                 try {
                     const strapiUser = await getStrapiUser(token.email);
                     token.strapiUser = strapiUser;
