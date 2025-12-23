@@ -232,7 +232,8 @@ export function formatPrice(amount: number, currency: "USD" | "ARS" = "ARS"): st
 /**
  * Get level display label in Spanish
  */
-export function getLevelLabel(level: CourseLevel): string {
+export function getLevelLabel(level: CourseLevel | null | undefined): string {
+    if (!level) return "";
     const labels: Record<CourseLevel, string> = {
         beginner: "Principiante",
         intermediate: "Intermedio",

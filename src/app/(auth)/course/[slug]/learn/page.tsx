@@ -1,4 +1,5 @@
 import Link from "next/link"
+import ReactMarkdown from "react-markdown"
 import { notFound, redirect } from "next/navigation"
 import { CheckCircle, PlayCircle, ChevronLeft, ChevronRight, Lock } from "lucide-react"
 import { getCourseBySlug } from "@/lib/strapi"
@@ -113,7 +114,7 @@ export default async function CoursePlayerPage({
     const nextLesson = visibleLessons[currentIndex + 1]
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
+        <div className="flex flex-col lg:flex-row">
             <div className="flex-1 max-w-6xl mx-auto px-0 py-4 lg:px-12 md:pb-8">
                 <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 sm:mb-2">
                     <Link
@@ -166,19 +167,17 @@ export default async function CoursePlayerPage({
                 </div>
 
                 <div className="mb-6">
-                    <h1 className="text-3xl font-light text-foreground">{currentLesson?.title || ""}</h1>
+                    <h1 className="mb-4 text-xl md:text-2xl xl:text-4xl font-light text-foreground">{currentLesson?.title || ""}</h1>
                 </div>
 
-                <div className="prose max-w-none dark:prose-invert text-foreground">
+                <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert text-foreground prose-headings:font-light prose-p:leading-relaxed prose-strong:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-h1:text-xl md:prose-h1:text-2xl prose-h2:text-lg md:prose-h2:text-xl prose-h3:text-base md:prose-h3:text-lg">
                     {currentLesson?.textContent ? (
-                        <div
-                            dangerouslySetInnerHTML={{
-                                __html: currentLesson.textContent,
-                            }}
-                        />
+                        <ReactMarkdown>
+                            {currentLesson.textContent}
+                        </ReactMarkdown>
                     ) : (
-                        <div className="text-sm text-muted-foreground">
-                            Esta lección no tiene descripción disponible.
+                        <div className="text-sm text-muted-foreground italic">
+                            Esta lección no tiene contenido escrito adicional.
                         </div>
                     )}
                 </div>

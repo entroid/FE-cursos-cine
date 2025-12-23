@@ -13,7 +13,7 @@ interface CourseSidebarProps {
     priceArg: number;
     priceUsd?: number;
     estimatedDuration: number;
-    level: CourseLevel;
+    level?: CourseLevel;
     noCard?: boolean;
 }
 
@@ -43,9 +43,11 @@ export function CourseSidebar({
             <div className={`${noCard ? "p-4" : "p-6"} border-b border-border space-y-2`}>
                 {enrollment ? (
                     <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs font-light inline-flex rounded-full bg-muted text-foreground px-2.5 py-0.5">
-                            {getLevelLabel(level)}
-                        </span>
+                        {level ? (
+                            <span className="text-xs font-light inline-flex rounded-full bg-muted text-foreground px-2.5 py-0.5">
+                                {getLevelLabel(level)}
+                            </span>
+                        ) : <div />}
                         <span className="text-sm text-muted-foreground">
                             {isCompleted ? "Curso completado" : "En progreso"}
                         </span>
@@ -62,9 +64,11 @@ export function CourseSidebar({
                                 </p>
                             ) : null}
                         </div>
-                        <span className="text-xs rounded-full bg-muted px-2.5 py-0.5 text-muted-foreground self-start">
-                            {getLevelLabel(level)}
-                        </span>
+                        {level && (
+                            <span className="text-xs rounded-full bg-muted px-2.5 py-0.5 text-muted-foreground self-start">
+                                {getLevelLabel(level)}
+                            </span>
+                        )}
 
                         <p className="text-sm text-muted-foreground">Acceso de por vida</p>
                     </>

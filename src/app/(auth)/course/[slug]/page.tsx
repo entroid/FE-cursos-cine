@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 import { notFound } from "next/navigation";
 import { PlayCircle } from "lucide-react";
 
@@ -96,20 +97,18 @@ export default async function CourseDetailPage({
                                 {course.tags[0].name}
                             </span>
                         ) : null}
-                        <h1 className="mb-4 text-5xl font-light text-foreground">
+                        <h1 className="mb-4 text-xl md:text-2xl xl:text-4xl font-light text-foreground">
                             {course.title}
                         </h1>
                     </div>
 
                     {course.fullDescription ? (
-                        <section className="prose max-w-none dark:prose-invert text-foreground pb-4">
-                            <h2>Descripción del curso</h2>
-                            <div
-                                dangerouslySetInnerHTML={{
-                                    __html: course.fullDescription,
-                                }}
-                            />
-                        </section>
+                        <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert text-foreground prose-headings:font-light prose-p:leading-relaxed prose-strong:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-h1:text-xl md:prose-h1:text-2xl prose-h2:text-lg md:prose-h2:text-xl prose-h3:text-base md:prose-h3:text-lg">
+                            <h4 className="mb-6 font-light text-foreground border-b pb-2"> </h4>
+                            <ReactMarkdown>
+                                {course.fullDescription}
+                            </ReactMarkdown>
+                        </div>
                     ) : null}
 
                     <section className="border-t pt-8 mt-8">
